@@ -1,0 +1,404 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-gray-50 text-gray-900;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    }
+}
+
+@layer components {
+    .btn-primary {
+        @apply bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors shadow-sm hover:shadow-md;
+    }
+
+    .btn-secondary {
+        @apply bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 transition-colors shadow-sm hover:shadow-md;
+    }
+
+    .btn-success {
+        @apply bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm hover:shadow-md;
+    }
+
+    .btn-danger {
+        @apply bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors shadow-sm hover:shadow-md;
+    }
+
+    .btn-outline {
+        @apply border-2 border-orange-600 text-orange-600 px-4 py-2 rounded-lg hover:bg-orange-600 hover:text-white transition-colors;
+    }
+
+    .btn-ghost {
+        @apply text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors;
+    }
+
+    .card {
+        @apply bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:border-orange-200 transition-all;
+    }
+
+    .card-hover {
+        @apply bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md hover:border-orange-300 transition-all hover:-translate-y-1;
+    }
+
+    .input-field {
+        @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all;
+    }
+
+    .input-label {
+        @apply block text-sm font-medium text-gray-700 mb-1;
+    }
+
+    .badge {
+        @apply px-2 py-1 rounded-full text-xs font-medium;
+    }
+
+    .badge-success {
+        @apply bg-green-100 text-green-800;
+    }
+
+    .badge-warning {
+        @apply bg-yellow-100 text-yellow-800;
+    }
+
+    .badge-danger {
+        @apply bg-red-100 text-red-800;
+    }
+
+    .badge-info {
+        @apply bg-blue-100 text-blue-800;
+    }
+
+    .badge-neutral {
+        @apply bg-gray-100 text-gray-800;
+    }
+
+    .alert {
+        @apply rounded-lg p-4 border-l-4;
+    }
+
+    .alert-success {
+        @apply bg-green-50 border-green-500 text-green-700;
+    }
+
+    .alert-warning {
+        @apply bg-yellow-50 border-yellow-500 text-yellow-700;
+    }
+
+    .alert-danger {
+        @apply bg-red-50 border-red-500 text-red-700;
+    }
+
+    .alert-info {
+        @apply bg-blue-50 border-blue-500 text-blue-700;
+    }
+
+    .table-container {
+        @apply bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100;
+    }
+
+    .table-header {
+        @apply bg-gray-50;
+    }
+
+    .table-header th {
+        @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+    }
+
+    .table-row {
+        @apply hover:bg-orange-50/50 transition-colors border-b border-gray-100;
+    }
+
+    .table-row td {
+        @apply px-4 py-3 text-sm;
+    }
+
+    .shadow-card {
+        @apply shadow-sm;
+    }
+
+    .shadow-card-hover {
+        @apply shadow-md;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.3s ease-out;
+    }
+}
+
+/* ============================================
+   RESPONSIVE - AGREGADO AL FINAL
+   ============================================ */
+
+/* Extra Small (XS) - Teléfonos muy pequeños (< 480px) */
+@media (max-width: 480px) {
+    .card {
+        padding: 1rem;
+    }
+    .card-hover {
+        padding: 1rem;
+    }
+    .input-field {
+        font-size: 0.875rem;
+        padding: 0.625rem 0.75rem;
+    }
+    .btn-primary, .btn-secondary, .btn-success, .btn-danger, .btn-outline {
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+    }
+    .btn-ghost {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    h1 { font-size: 1.25rem; }
+    h2 { font-size: 1.1rem; }
+    h3 { font-size: 1rem; }
+    .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+    .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+    .grid-cols-2 { grid-template-columns: 1fr; }
+    .p-6 { padding: 1rem; }
+    .gap-6 { gap: 0.75rem; }
+    .space-y-6 > * + * { margin-top: 0.75rem; }
+    .px-6 { padding-left: 1rem; padding-right: 1rem; }
+    .lg\:col-span-2 { grid-column: span 1; }
+    .lg\:col-span-1 { grid-column: span 1; }
+    
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .table-container table {
+        min-width: 600px;
+    }
+    
+    .badge {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.5rem;
+    }
+    
+    .alert {
+        padding: 0.75rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* Small (SM) - Tablets y teléfonos grandes (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+    .card {
+        padding: 1.25rem;
+    }
+    .card-hover {
+        padding: 1.25rem;
+    }
+    .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+    .grid-cols-4 { grid-template-columns: repeat(3, 1fr); }
+    .lg\:col-span-2 { grid-column: span 1; }
+    .lg\:col-span-1 { grid-column: span 1; }
+    
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .table-container table {
+        min-width: 700px;
+    }
+}
+
+/* Medium (MD) - Tablets grandes y portátiles pequeños (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .grid-cols-4 { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Large (LG) - Escritorio estándar (1025px - 1400px) */
+@media (min-width: 1025px) and (max-width: 1400px) {
+    /* Mantiene el diseño original */
+}
+
+/* Extra Large (XL) - Pantallas grandes (> 1400px) */
+@media (min-width: 1401px) {
+    .container-responsive {
+        max-width: 1280px;
+    }
+}
+
+/* Navegación en móvil */
+@media (max-width: 768px) {
+    .sticky-top-16 {
+        top: 0;
+    }
+    .sticky-top-36 {
+        top: 1rem;
+    }
+    .flex-wrap.gap-4 {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .grid-cols-1.md\:grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    .hide-on-mobile {
+        display: none;
+    }
+    
+    .sticky {
+        position: sticky;
+    }
+    .top-16 { top: 0; }
+    .top-36 { top: 1rem; }
+    
+    .grid-cols-1.md\:grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    .grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+    .grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3.xl\:grid-cols-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Ocultar en tablet */
+@media (min-width: 481px) and (max-width: 768px) {
+    .hide-on-tablet {
+        display: none;
+    }
+}
+
+/* Dashboard - tarjetas en móvil */
+@media (max-width: 480px) {
+    .dashboard-card {
+        padding: 1rem;
+    }
+    .dashboard-card .text-3xl {
+        font-size: 1.5rem;
+    }
+    .dashboard-card .text-2xl {
+        font-size: 1.25rem;
+    }
+}
+
+/* Dashboard - grid de tarjetas */
+@media (max-width: 640px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (min-width: 1025px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Carrito en móvil */
+@media (max-width: 768px) {
+    .cart-sticky {
+        position: relative;
+        top: 0;
+        margin-top: 1rem;
+    }
+}
+
+/* Productos en móvil */
+@media (max-width: 480px) {
+    .product-card {
+        padding: 0.75rem;
+    }
+    .product-card .text-3xl {
+        font-size: 1.5rem;
+    }
+}
+
+/* Filtros en móvil */
+@media (max-width: 768px) {
+    .filters-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    .filters-grid .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Gráficos en móvil */
+@media (max-width: 768px) {
+    .chart-container {
+        height: 200px;
+    }
+    .stats-card .text-2xl {
+        font-size: 1.25rem;
+    }
+}
+
+/* Tarjetas de cocina en móvil */
+@media (max-width: 480px) {
+    .kitchen-card {
+        padding: 0.75rem;
+    }
+    .kitchen-card .text-2xl {
+        font-size: 1.25rem;
+    }
+    .kitchen-card .badge {
+        font-size: 0.6rem;
+        padding: 0.1rem 0.4rem;
+    }
+}
+
+/* Admin Tools en móvil */
+@media (max-width: 768px) {
+    .admin-tools-grid {
+        grid-template-columns: 1fr;
+    }
+    .admin-tools-grid .card-hover {
+        padding: 1rem;
+    }
+}
+
+/* Botones en móvil */
+@media (max-width: 480px) {
+    .btn-sm-mobile {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.7rem;
+    }
+    .btn-block-mobile {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Modales en móvil */
+@media (max-width: 480px) {
+    .modal-content {
+        padding: 1rem;
+        max-width: 95vw;
+        max-height: 90vh;
+    }
+    .modal-content .text-xl {
+        font-size: 1.1rem;
+    }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+    .modal-content {
+        padding: 1.25rem;
+        max-width: 90vw;
+        max-height: 85vh;
+    }
+}
