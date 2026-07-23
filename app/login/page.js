@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import Image from 'next/image'
 
 export default function LoginPage() {
     const [usuario, setUsuario] = useState('')
@@ -49,12 +50,23 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
-                <div className="text-center mb-8">
-                    <div className="text-5xl mb-2">🍕</div>
-                    <h1 className="text-2xl font-bold text-gray-800">Pizzería POS</h1>
-                    <p className="text-gray-500 text-sm">Sistema de punto de venta</p>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 p-3 sm:p-4">
+            <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8 max-w-md w-full">
+                <div className="text-center mb-6 sm:mb-8">
+                    {/* ============================================
+                        LOGO EN LOGIN
+                        ============================================ */}
+                    <div className="relative w-20 h-20 mx-auto mb-4">
+                        <Image
+                            src="/images/logo.png"
+                            alt="Pizzería POS"
+                            fill
+                            className="object-contain"
+                            priority
+                        />
+                    </div>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Pizzería POS</h1>
+                    <p className="text-gray-500 text-xs sm:text-sm">Sistema de punto de venta</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -97,7 +109,7 @@ export default function LoginPage() {
                     </button>
                 </form>
 
-                <div className="mt-6 pt-4 border-t text-center text-xs text-gray-400">
+                <div className="mt-6 pt-4 border-t text-center text-[10px] sm:text-xs text-gray-400">
                     <p>Admin: admin / admin123</p>
                     <p>Empleado: juan / empleado123</p>
                 </div>

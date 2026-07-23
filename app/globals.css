@@ -122,6 +122,19 @@
         @apply shadow-md;
     }
 
+    /* === LOGO === */
+    .logo-img {
+        @apply h-8 w-auto object-contain;
+    }
+
+    .logo-text {
+        @apply text-xl font-bold text-gray-800;
+    }
+
+    .logo-container {
+        @apply flex items-center gap-3;
+    }
+
     @keyframes fadeIn {
         from {
             opacity: 0;
@@ -191,6 +204,16 @@
     .alert {
         padding: 0.75rem;
         font-size: 0.85rem;
+    }
+
+    .logo-img {
+        height: 1.75rem;
+    }
+    .logo-text {
+        font-size: 1rem;
+    }
+    .logo-container {
+        gap: 0.5rem;
     }
 }
 
@@ -401,4 +424,21 @@
         max-width: 90vw;
         max-height: 85vh;
     }
+}
+
+/* ============================================
+   MONEDA - PESOS COLOMBIANOS
+   ============================================ */
+
+.price-cop {
+    font-feature-settings: "tnum";
+}
+
+.price-cop::before {
+    content: "$";
+    font-weight: 600;
+}
+
+.number-cop {
+    font-feature-settings: "tnum";
 }

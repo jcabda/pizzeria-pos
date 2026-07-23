@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function DashboardLayout({ children }) {
     const [usuario, setUsuario] = useState(null)
@@ -48,18 +49,16 @@ export default function DashboardLayout({ children }) {
 
     const esAdmin = usuario.rol === 'admin'
 
-    // Pestañas principales (todos los usuarios)
     const pestañasPrincipales = [
         { href: '/dashboard', label: '📊 Inicio' },
         { href: '/pedidos', label: '📝 Pedidos' },
         { href: '/cocina', label: '👨‍🍳 Cocina' },
         { href: '/estadisticas', label: '📊 Estadísticas' },
+        { href: '/mesas', label: '🍽️ Mesas' },
     ]
 
-    // Admin Tools es una pestaña más (solo admin)
     const adminToolsPestaña = { href: '/admin', label: '🛡️ Admin Tools' }
 
-    // Sub-pestañas de Admin Tools
     const adminSubPestañas = [
         { href: '/productos', label: '🍕 Productos' },
         { href: '/inventario', label: '🧂 Inventario' },
@@ -68,11 +67,9 @@ export default function DashboardLayout({ children }) {
         { href: '/auditoria', label: '📋 Auditoría' },
     ]
 
-    // Determinar si Admin Tools está activo
     const isAdminToolsActive = pathname.startsWith('/admin') || 
                                adminSubPestañas.some(p => pathname.startsWith(p.href))
 
-    // Construir menú completo
     const allLinks = [...pestañasPrincipales]
     if (esAdmin) {
         allLinks.push(adminToolsPestaña)
@@ -80,14 +77,21 @@ export default function DashboardLayout({ children }) {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* HEADER */}
             <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
-                        {/* Logo */}
-                        <Link href="/dashboard" className="flex items-center space-x-3 flex-shrink-0">
-                            <div className="bg-orange-600 rounded-lg p-2">
-                                <span className="text-xl">🍕</span>
+                        {/* ============================================
+                            LOGO CON IMAGEN
+                            ============================================ */}
+                        <Link href="/dashboard" className="flex items-center gap-3 flex-shrink-0">
+                            <div className="relative w-10 h-10">
+                                <Image
+                                    src="/images/logo.png"
+                                    alt="Pizzería POS"
+                                    fill
+                                    className="object-contain"
+                                    priority
+                                />
                             </div>
                             <div>
                                 <h1 className="text-lg font-bold text-gray-800">Pizzería POS</h1>
@@ -95,7 +99,6 @@ export default function DashboardLayout({ children }) {
                             </div>
                         </Link>
 
-                        {/* MENÚ PRINCIPAL - ESCRITORIO */}
                         <nav className="hidden lg:flex items-center space-x-1">
                             {pestañasPrincipales.map((link) => (
                                 <Link
@@ -125,7 +128,6 @@ export default function DashboardLayout({ children }) {
                             )}
                         </nav>
 
-                        {/* USER MENU + BOTÓN HAMBURGUESA */}
                         <div className="flex items-center space-x-4">
                             <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
                                 <span className="text-xl">{usuario.avatar || '👤'}</span>
@@ -141,7 +143,6 @@ export default function DashboardLayout({ children }) {
                                 Salir
                             </button>
 
-                            {/* BOTÓN HAMBURGUESA - SOLO MÓVIL */}
                             <button
                                 onClick={() => setMenuAbierto(!menuAbierto)}
                                 className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all"
@@ -161,7 +162,7 @@ export default function DashboardLayout({ children }) {
                 </div>
             </header>
 
-            {/* SUB-MENÚ DE ADMIN TOOLS */}
+            {/* SUB-MENÚ ADMIN */}
             {esAdmin && isAdminToolsActive && (
                 <div className="bg-purple-50/80 border-b border-purple-200 shadow-sm">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -208,7 +209,7 @@ export default function DashboardLayout({ children }) {
                 </div>
             )}
 
-            {/* MENÚ MÓVIL (DESPLEGABLE) */}
+            {/* MENÚ MÓVIL */}
             {menuAbierto && (
                 <div className="lg:hidden bg-white border-b border-gray-100 shadow-lg animate-fade-in">
                     <div className="max-w-7xl mx-auto px-4 py-4">
@@ -242,12 +243,10 @@ export default function DashboardLayout({ children }) {
                 </div>
             )}
 
-            {/* CONTENIDO PRINCIPAL */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-fade-in">
                 {children}
             </main>
 
-            {/* BOTÓN VOLVER ARRIBA */}
             <button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 className="fixed bottom-6 right-6 bg-orange-600 text-white p-3 rounded-full shadow-lg hover:bg-orange-700 transition-all hover:scale-110 z-50"
