@@ -16,10 +16,10 @@ export default function HomePage() {
     }, [router])
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0F0F1A] via-[#1A1A2E] to-[#16213E]">
             <div className="text-center">
-                <div className="text-4xl mb-4 animate-pulse">🍕</div>
-                <p className="text-gray-600">Redirigiendo...</p>
+                <div className="text-6xl mb-4 animate-fire-pulse">🔥</div>
+                <p className="text-white/40">Redirigiendo...</p>
             </div>
         </div>
     )

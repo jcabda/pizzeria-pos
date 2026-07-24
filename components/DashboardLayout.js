@@ -9,7 +9,7 @@ import {
     Users, Package, Pizza, FolderOpen, FileText,
     LayoutDashboard, Shield, Settings, Ruler, Tag, Scale,
     Utensils, Coffee, Truck, LogOut, Menu, X, Bell,
-    Eye, EyeOff
+    Flame, Sparkles
 } from 'lucide-react'
 
 export default function DashboardLayout({ children }) {
@@ -40,10 +40,10 @@ export default function DashboardLayout({ children }) {
 
     if (!usuario) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-screen flex items-center justify-center bg-[#0F0F1A]">
                 <div className="text-center">
-                    <div className="text-4xl mb-4 animate-pulse">🔥</div>
-                    <p className="text-gray-600">Cargando...</p>
+                    <div className="text-5xl mb-4 animate-fire-pulse">🔥</div>
+                    <p className="text-white/40">Cargando...</p>
                 </div>
             </div>
         )
@@ -56,11 +56,7 @@ export default function DashboardLayout({ children }) {
 
     const esAdmin = usuario.rol === 'admin'
 
-    // ============================================
-    // OBTENER PERMISOS DEL USUARIO
-    // ============================================
     const obtenerPermisos = () => {
-        // Si es admin, tiene todos los permisos
         if (usuario.rol === 'admin') {
             return {
                 productos: true,
@@ -73,7 +69,6 @@ export default function DashboardLayout({ children }) {
                 unidades: true
             }
         }
-        // Si no, usar los permisos guardados
         return usuario.permisos || {
             productos: false,
             inventario: false,
@@ -87,26 +82,18 @@ export default function DashboardLayout({ children }) {
     }
 
     const permisos = obtenerPermisos()
-    const tienePermiso = (permiso) => {
-        return permisos[permiso] === true
-    }
+    const tienePermiso = (permiso) => permisos[permiso] === true
+    const tieneAlgunPermiso = Object.values(permisos).some(v => v === true)
 
-    // ============================================
-    // PESTAÑAS PRINCIPALES (todos los usuarios)
-    // ============================================
+    // Pestañas principales
     const pestañasPrincipales = [
         { href: '/dashboard', icon: LayoutDashboard, label: 'Inicio' },
-        { href: '/pedidos', icon: ClipboardList, label: 'Pedidos' },
-        { href: '/cocina', icon: ChefHat, label: 'Cocina' },
         { href: '/comandas', icon: Utensils, label: 'Mesas' },
+        { href: '/cocina', icon: ChefHat, label: 'Cocina' },
         { href: '/estadisticas', icon: BarChart3, label: 'Estadísticas' },
     ]
 
-    // ============================================
-    // ADMIN TOOLS (solo si tiene permisos)
-    // ============================================
-    const adminToolsPestaña = { href: '/admin', icon: Shield, label: 'Admin Tools' }
-
+    // Admin Tools - SOLO si tiene permisos
     const adminSubPestañas = [
         { href: '/productos', icon: Pizza, label: 'Productos', permiso: 'productos' },
         { href: '/inventario', icon: Package, label: 'Inventario', permiso: 'inventario' },
@@ -116,17 +103,8 @@ export default function DashboardLayout({ children }) {
         { href: '/admin/tamanios', icon: Ruler, label: 'Tamaños', permiso: 'tamanios' },
         { href: '/admin/tipos', icon: Tag, label: 'Tipos', permiso: 'tipos' },
         { href: '/admin/unidades', icon: Scale, label: 'Unidades', permiso: 'unidades' },
-    ]
+    ].filter(item => esAdmin || tienePermiso(item.permiso))
 
-    // Filtrar sub-pestañas según permisos
-    const adminSubPestañasFiltradas = adminSubPestañas.filter(item => {
-        // Admin tiene todo
-        if (usuario.rol === 'admin') return true
-        // Otros roles: verificar permiso
-        return tienePermiso(item.permiso)
-    })
-
-    // Determinar si Admin Tools está activo
     const isAdminToolsActive = pathname.startsWith('/admin') || 
                                adminSubPestañas.some(p => pathname.startsWith(p.href)) ||
                                pathname === '/productos' ||
@@ -135,25 +113,19 @@ export default function DashboardLayout({ children }) {
                                pathname === '/usuarios' ||
                                pathname === '/auditoria'
 
-    // Construir menú completo
     const allLinks = [...pestañasPrincipales]
-    
-    // Agregar Admin Tools solo si tiene al menos un permiso o es admin
-    const tieneAlgunPermiso = Object.values(permisos).some(v => v === true)
     if (esAdmin || tieneAlgunPermiso) {
-        allLinks.push(adminToolsPestaña)
+        allLinks.push({ href: '/admin', icon: Shield, label: 'Admin Tools' })
     }
 
-    // ============================================
-    // RENDER
-    // ============================================
     return (
-        <div className="min-h-screen bg-gray-50">
-            <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
+        <div className="min-h-screen bg-gradient-to-br from-[#0F0F1A] via-[#1A1A2E] to-[#16213E]">
+            {/* Header Glass */}
+            <header className="bg-white/5 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
-                        {/* LOGO GOLDEN ON FIRE */}
-                        <Link href="/dashboard" className="flex items-center gap-3 flex-shrink-0">
+                        {/* LOGO */}
+                        <Link href="/comandas" className="flex items-center gap-3 flex-shrink-0">
                             <div className="relative w-10 h-10">
                                 <Image
                                     src="/images/logo.png"
@@ -162,19 +134,19 @@ export default function DashboardLayout({ children }) {
                                     className="object-contain"
                                     priority
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 blur-xl opacity-30 animate-pulse -z-10"></div>
+                                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 blur-xl opacity-30 animate-pulse"></div>
                             </div>
                             <div>
                                 <h1 className="text-lg font-bold">
-                                    <span className="text-golden">Golden</span>
-                                    <span className="text-red-600"> on </span>
-                                    <span className="text-orange-500">Fire</span>
+                                    <span className="text-gradient-golden">Golden</span>
+                                    <span className="text-white"> on </span>
+                                    <span className="text-gradient-fire">Fire</span>
                                 </h1>
-                                <p className="text-xs text-gray-500 hidden sm:block">🔥 Sistema de punto de venta</p>
+                                <p className="text-xs text-white/30 hidden sm:block">🔥 Sistema de punto de venta</p>
                             </div>
                         </Link>
 
-                        {/* MENÚ DE ESCRITORIO */}
+                        {/* Menú Desktop */}
                         <nav className="hidden lg:flex items-center space-x-1">
                             {pestañasPrincipales.map((link) => (
                                 <Link
@@ -182,8 +154,8 @@ export default function DashboardLayout({ children }) {
                                     href={link.href}
                                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
                                         isActive(link.href)
-                                            ? 'bg-orange-100 text-orange-700'
-                                            : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'
+                                            ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                                            : 'text-white/60 hover:text-white hover:bg-white/5'
                                     }`}
                                 >
                                     <link.icon size={18} />
@@ -191,14 +163,13 @@ export default function DashboardLayout({ children }) {
                                 </Link>
                             ))}
 
-                            {/* Admin Tools - solo si tiene permisos */}
                             {(esAdmin || tieneAlgunPermiso) && (
                                 <Link
                                     href="/admin"
                                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
                                         isAdminToolsActive
-                                            ? 'bg-purple-100 text-purple-700'
-                                            : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                                            ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                                            : 'text-white/60 hover:text-white hover:bg-white/5'
                                     }`}
                                 >
                                     <Shield size={18} />
@@ -207,51 +178,43 @@ export default function DashboardLayout({ children }) {
                             )}
                         </nav>
 
-                        {/* USER MENU */}
+                        {/* User Menu */}
                         <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                            <div className="flex items-center gap-2 glass rounded-full px-3 py-1.5 border border-white/10">
                                 <span className="text-xl">{usuario.avatar || '👤'}</span>
                                 <div className="hidden sm:block">
-                                    <p className="text-sm font-medium text-gray-700">{usuario.nombre}</p>
-                                    <p className="text-xs text-gray-500 capitalize">{usuario.rol}</p>
+                                    <p className="text-sm font-medium text-white">{usuario.nombre}</p>
+                                    <p className="text-xs text-white/40 capitalize">{usuario.rol}</p>
                                 </div>
                             </div>
                             <button
                                 onClick={handleLogout}
-                                className="text-sm text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
+                                className="text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-2 rounded-lg transition-colors"
                             >
                                 Salir
                             </button>
 
                             <button
                                 onClick={() => setMenuAbierto(!menuAbierto)}
-                                className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all"
+                                className="lg:hidden p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-all"
                             >
-                                {menuAbierto ? (
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                ) : (
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                                    </svg>
-                                )}
+                                {menuAbierto ? <X size={24} /> : <Menu size={24} />}
                             </button>
                         </div>
                     </div>
                 </div>
             </header>
 
-            {/* SUB-MENÚ ADMIN - solo si tiene permisos y está activo */}
-            {(esAdmin || tieneAlgunPermiso) && isAdminToolsActive && adminSubPestañasFiltradas.length > 0 && (
-                <div className="bg-purple-50/80 border-b border-purple-200 shadow-sm">
+            {/* Sub-menú Admin */}
+            {(esAdmin || tieneAlgunPermiso) && isAdminToolsActive && adminSubPestañas.length > 0 && (
+                <div className="bg-purple-500/10 border-b border-purple-500/20 backdrop-blur-sm">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex items-center space-x-1 py-2 overflow-x-auto">
-                            <span className="text-xs font-medium text-purple-600 mr-2 flex items-center gap-1">
+                            <span className="text-xs font-medium text-purple-400 mr-2 flex items-center gap-1">
                                 <Shield size={14} />
                                 Admin:
                             </span>
-                            {adminSubPestañasFiltradas.map((link) => {
+                            {adminSubPestañas.map((link) => {
                                 const isSubActive = pathname === link.href || pathname.startsWith(link.href)
                                 return (
                                     <Link
@@ -259,8 +222,8 @@ export default function DashboardLayout({ children }) {
                                         href={link.href}
                                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5 ${
                                             isSubActive
-                                                ? 'bg-purple-600 text-white shadow-sm'
-                                                : 'text-purple-700 hover:bg-purple-100'
+                                                ? 'bg-purple-500/30 text-purple-400 border border-purple-500/30'
+                                                : 'text-purple-300/60 hover:text-purple-300 hover:bg-purple-500/10'
                                         }`}
                                     >
                                         <link.icon size={14} />
@@ -273,27 +236,27 @@ export default function DashboardLayout({ children }) {
                 </div>
             )}
 
-            {/* BREADCRUMBS */}
+            {/* Breadcrumbs */}
             {pathname !== '/dashboard' && (
-                <div className="bg-white border-b border-gray-100 py-2 px-4 sm:px-6 lg:px-8">
+                <div className="bg-white/5 backdrop-blur-sm border-b border-white/5 py-2 px-4 sm:px-6 lg:px-8">
                     <div className="max-w-7xl mx-auto flex items-center gap-2 text-sm">
-                        <Link href="/dashboard" className="text-gray-400 hover:text-orange-500 transition-colors">
+                        <Link href="/comandas" className="text-white/30 hover:text-orange-400 transition-colors">
                             🏠
                         </Link>
-                        <span className="text-gray-300">/</span>
-                        <span className="text-gray-600 font-medium capitalize">
+                        <span className="text-white/20">/</span>
+                        <span className="text-white/60 font-medium capitalize">
                             {pathname.split('/').pop() || 'Inicio'}
                         </span>
-                        <span className="ml-auto text-xs text-gray-400">
+                        <span className="ml-auto text-xs text-white/20">
                             {new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                     </div>
                 </div>
             )}
 
-            {/* MENÚ MÓVIL */}
+            {/* Menú móvil */}
             {menuAbierto && (
-                <div className="lg:hidden bg-white border-b border-gray-100 shadow-lg animate-fade-in">
+                <div className="lg:hidden bg-white/5 backdrop-blur-xl border-b border-white/10 shadow-2xl animate-fade-in-up">
                     <div className="max-w-7xl mx-auto px-4 py-4">
                         <nav className="flex flex-col space-y-1">
                             {allLinks.map((link) => (
@@ -303,21 +266,21 @@ export default function DashboardLayout({ children }) {
                                     onClick={() => setMenuAbierto(false)}
                                     className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                                         isActive(link.href)
-                                            ? 'bg-orange-100 text-orange-700'
-                                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                            ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                                            : 'text-white/60 hover:text-white hover:bg-white/5'
                                     }`}
                                 >
                                     <link.icon size={18} />
                                     {link.label}
                                 </Link>
                             ))}
-                            <hr className="my-2 border-gray-100" />
+                            <hr className="my-2 border-white/10" />
                             <button
                                 onClick={() => {
                                     setMenuAbierto(false)
                                     handleLogout()
                                 }}
-                                className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all"
+                                className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10 transition-all"
                             >
                                 <LogOut size={18} />
                                 Salir
@@ -327,16 +290,17 @@ export default function DashboardLayout({ children }) {
                 </div>
             )}
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-fade-in">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-fade-in-up">
                 {children}
             </main>
 
+            {/* Botón volver arriba */}
             <button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="fixed bottom-6 right-6 bg-orange-600 text-white p-3 rounded-full shadow-lg hover:bg-orange-700 transition-all hover:scale-110 z-50"
+                className="fixed bottom-6 right-6 bg-gradient-to-r from-orange-500 to-red-500 text-white p-3 rounded-full shadow-lg hover:shadow-2xl transition-all hover:scale-110 z-50"
                 title="Volver arriba"
             >
-                ⬆
+                🔥
             </button>
         </div>
     )
