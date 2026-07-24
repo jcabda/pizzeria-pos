@@ -134,12 +134,10 @@ export default function DashboardLayout({ children }) {
                         {/* LOGO */}
                         <Link href="/comandas" className="flex items-center gap-3 flex-shrink-0">
                             <div className="relative w-10 h-10">
-                                <Image
-                                    src="/images/logo.png"
-                                    alt="Golden on Fire"
-                                    fill
-                                    className="object-contain"
-                                    priority
+                                <img 
+                                    src="/images/logo.png" 
+                                    alt="Golden on Fire" 
+                                    className="w-10 h-10 object-contain"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 blur-xl opacity-30 animate-pulse"></div>
                             </div>

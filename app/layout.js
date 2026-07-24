@@ -8,6 +8,13 @@ export const metadata = {
     description: 'Sistema de punto de venta para pizzería',
     viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
     themeColor: '#D4AF37',
+    icons: {
+        icon: [
+            { url: '/favicon.png', type: 'image/png' },
+            { url: '/favicon.ico', sizes: 'any' },
+        ],
+        apple: '/favicon.png',
+    },
 }
 
 export default function RootLayout({ children }) {
