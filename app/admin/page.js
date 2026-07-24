@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/DashboardLayout'
-import { Shield, Pizza, Package, FolderOpen, Users, FileText, Ruler, Tag, Scale, Utensils } from 'lucide-react'
+import { Shield, Pizza, Package, FolderOpen, Users, FileText, Ruler, Tag, Scale, Utensils, ChefHat } from 'lucide-react'
 import Link from 'next/link'
 
 export default function AdminPage() {
@@ -31,6 +31,8 @@ export default function AdminPage() {
         { href: '/admin/tamanios', icon: Ruler, label: 'Tamaños', desc: 'Modificar tamaños de pizza' },
         { href: '/admin/tipos', icon: Tag, label: 'Tipos', desc: 'Gestionar tipos de productos' },
         { href: '/admin/unidades', icon: Scale, label: 'Unidades', desc: 'Gestionar unidades de medida' },
+        // ✅ NUEVO: Cocina en Admin Tools
+        { href: '/cocina', icon: ChefHat, label: 'Cocina', desc: 'Panel de cocina' },
     ]
 
     return (

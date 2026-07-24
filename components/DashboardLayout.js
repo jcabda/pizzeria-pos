@@ -56,7 +56,6 @@ export default function DashboardLayout({ children }) {
 
     const esAdmin = usuario.rol === 'admin'
 
-    // ✅ FUNCIÓN PARA VERIFICAR PERMISOS (incluye cocina)
     const tienePermiso = (permiso) => {
         if (usuario.rol === 'admin') return true
         return usuario.permisos?.[permiso] === true
@@ -73,7 +72,7 @@ export default function DashboardLayout({ children }) {
                 tamanios: true,
                 tipos: true,
                 unidades: true,
-                cocina: true // ✅ NUEVO
+                cocina: true
             }
         }
         return usuario.permisos || {
@@ -85,25 +84,22 @@ export default function DashboardLayout({ children }) {
             tamanios: false,
             tipos: false,
             unidades: false,
-            cocina: false // ✅ NUEVO
+            cocina: false
         }
     }
 
     const permisos = obtenerPermisos()
     const tieneAlgunPermiso = Object.values(permisos).some(v => v === true)
 
-    // ✅ PESTAÑAS PRINCIPALES (Cocina con permiso)
     const pestañasPrincipales = [
         { href: '/dashboard', icon: LayoutDashboard, label: 'Inicio' },
         { href: '/comandas', icon: Utensils, label: 'Mesas' },
-        // ✅ Cocina SOLO si tiene permiso
         ...(tienePermiso('cocina') ? 
             [{ href: '/cocina', icon: ChefHat, label: 'Cocina' }] : []
         ),
         { href: '/estadisticas', icon: BarChart3, label: 'Estadísticas' },
     ]
 
-    // Admin Tools - SOLO si tiene permisos
     const adminSubPestañas = [
         { href: '/productos', icon: Pizza, label: 'Productos', permiso: 'productos' },
         { href: '/inventario', icon: Package, label: 'Inventario', permiso: 'inventario' },
@@ -125,7 +121,8 @@ export default function DashboardLayout({ children }) {
 
     const allLinks = [...pestañasPrincipales]
     if (esAdmin || tieneAlgunPermiso) {
-        allLinks.push({ href: '/administracion', icon: Shield, label: 'Admin Tools' })
+        // ✅ CORREGIDO: /administracion → /admin
+        allLinks.push({ href: '/admin', icon: Shield, label: 'Admin Tools' })
     }
 
     return (
@@ -175,7 +172,7 @@ export default function DashboardLayout({ children }) {
 
                             {(esAdmin || tieneAlgunPermiso) && (
                                 <Link
-                                    href="/administracion"
+                                    href="/admin"
                                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
                                         isAdminToolsActive
                                             ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
