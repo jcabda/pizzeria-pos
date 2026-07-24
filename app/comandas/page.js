@@ -5,10 +5,7 @@ import DashboardLayout from '@/components/DashboardLayout'
 import { supabase } from '@/lib/supabaseClient'
 import { formatPrice } from '@/lib/currency'
 import Link from 'next/link'
-import { 
-    Plus, Users, Coffee, Utensils, X, Check, Trash2, 
-    Eye, ShoppingCart, Home, Truck 
-} from 'lucide-react'
+import { Users, Coffee, X, Eye, Truck } from 'lucide-react'
 
 export default function ComandasPage() {
     const [mesas, setMesas] = useState([])
@@ -51,7 +48,7 @@ export default function ComandasPage() {
         try {
             console.log('🔄 Cargando datos...')
             
-            // Cargar mesas
+            // Cargar mesas - CONSULTA DIRECTA
             const { data: mesasData, error: mesasError } = await supabase
                 .from('mesas')
                 .select('*')
@@ -99,7 +96,7 @@ export default function ComandasPage() {
 
             if (mesasData?.length === 0) {
                 console.warn('⚠️ No hay mesas en la base de datos')
-                setError('No hay mesas registradas. Ejecuta el SQL para crear mesas.')
+                setError('No hay mesas registradas. Ejecuta el SQL para crear mesas en Supabase.')
             }
 
         } catch (error) {
@@ -213,41 +210,6 @@ export default function ComandasPage() {
         }
     }
 
-    const eliminarItem = async (itemId, comandaId) => {
-        if (!confirm('¿Eliminar este item de la comanda?')) return
-
-        try {
-            const { error } = await supabase
-                .from('comanda_items')
-                .delete()
-                .eq('id', itemId)
-
-            if (error) throw error
-
-            const { data: items } = await supabase
-                .from('comanda_items')
-                .select('subtotal')
-                .eq('comanda_id', comandaId)
-
-            const nuevoSubtotal = items?.reduce((sum, i) => sum + (i.subtotal || 0), 0) || 0
-
-            await supabase
-                .from('comandas')
-                .update({ subtotal: nuevoSubtotal })
-                .eq('id', comandaId)
-
-            setItemsComanda(prev => ({
-                ...prev,
-                [comandaId]: prev[comandaId]?.filter(item => item.id !== itemId) || []
-            }))
-
-            cargarDatos()
-        } catch (error) {
-            console.error('Error:', error)
-            alert('❌ Error al eliminar el item')
-        }
-    }
-
     const getEstadoColor = (estado) => {
         const colores = {
             disponible: 'bg-green-100 border-green-500 text-green-700',
@@ -275,7 +237,6 @@ export default function ComandasPage() {
         return tipos[tipo] || tipo
     }
 
-    // Si hay error, mostrar mensaje
     if (error) {
         return (
             <DashboardLayout>
@@ -298,7 +259,6 @@ export default function ComandasPage() {
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                {/* Header */}
                 <div className="flex justify-between items-center">
                     <div>
                         <h2 className="text-2xl font-bold">
@@ -309,14 +269,11 @@ export default function ComandasPage() {
                         </h2>
                         <p className="text-sm text-gray-500">Gestiona las mesas y comandas abiertas</p>
                     </div>
-                    <div className="flex gap-2">
-                        <button onClick={cargarDatos} className="btn-secondary text-sm">
-                            🔄 Actualizar
-                        </button>
-                    </div>
+                    <button onClick={cargarDatos} className="btn-secondary text-sm">
+                        🔄 Actualizar
+                    </button>
                 </div>
 
-                {/* Grid de Mesas */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     {cargando ? (
                         <div className="col-span-full text-center py-12 text-gray-500">Cargando mesas...</div>
@@ -420,7 +377,6 @@ export default function ComandasPage() {
                     )}
                 </div>
 
-                {/* Comandas abiertas resumen */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
                     <div className="px-4 py-3 bg-gray-50 border-b">
                         <h3 className="font-semibold flex items-center gap-2">
