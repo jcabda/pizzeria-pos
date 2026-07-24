@@ -4,97 +4,132 @@ import { useState, useEffect } from 'react'
 import DashboardLayout from '@/components/DashboardLayout'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
-import { Plus, Users, CheckCircle, Clock, Pizza } from 'lucide-react'
-import ClienteSelector from '@/components/pedido/ClienteSelector'
-import MeseroSelector from '@/components/pedido/MeseroSelector'
-import { formatPrice } from '@/lib/currency'
+import { Plus, Edit2, Trash2, RefreshCw } from 'lucide-react'
 
 export default function MesasPage() {
     const [mesas, setMesas] = useState([])
-    const [pedidosActivos, setPedidosActivos] = useState([])
-    const [mesaSeleccionada, setMesaSeleccionada] = useState(null)
     const [cargando, setCargando] = useState(true)
-    const [cliente, setCliente] = useState('Cliente Local')
-    const [mesero, setMesero] = useState('')
-    const [nuevoPedido, setNuevoPedido] = useState([])
+    const [mostrarFormulario, setMostrarFormulario] = useState(false)
+    const [editandoId, setEditandoId] = useState(null)
+    const [formData, setFormData] = useState({
+        numero: '',
+        capacidad: 4,
+        estado: 'disponible'
+    })
 
     useEffect(() => {
-        cargarDatos()
+        cargarMesas()
     }, [])
 
-    const cargarDatos = async () => {
+    const cargarMesas = async () => {
+        setCargando(true)
         try {
-            // Cargar mesas
-            const { data: mesasData } = await supabase
+            const { data } = await supabase
                 .from('mesas')
                 .select('*')
                 .order('numero')
-
-            setMesas(mesasData || [])
-
-            // Cargar pedidos activos
-            const { data: pedidosData } = await supabase
-                .from('pedidos')
-                .select('*, usuarios (nombre, avatar)')
-                .in('estado', ['pendiente', 'preparando'])
-                .order('fecha', { ascending: false })
-
-            setPedidosActivos(pedidosData || [])
+            setMesas(data || [])
         } catch (error) {
-            console.error('Error cargando datos:', error)
+            console.error('Error cargando mesas:', error)
         } finally {
             setCargando(false)
         }
     }
 
-    const crearMesa = async () => {
-        const numero = mesas.length + 1
-        const { data, error } = await supabase
-            .from('mesas')
-            .insert({ numero, estado: 'disponible' })
-            .select()
-            .single()
-
-        if (error) {
-            console.error('Error creando mesa:', error)
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        
+        if (!formData.numero) {
+            alert('Por favor, completa todos los campos requeridos')
             return
         }
 
-        setMesas([...mesas, data])
+        const data = {
+            numero: parseInt(formData.numero),
+            capacidad: parseInt(formData.capacidad) || 4,
+            estado: formData.estado || 'disponible',
+            activo: true
+        }
+
+        try {
+            if (editandoId) {
+                const { error } = await supabase
+                    .from('mesas')
+                    .update(data)
+                    .eq('id', editandoId)
+                if (error) throw error
+                alert('✅ Mesa actualizada correctamente')
+            } else {
+                const { error } = await supabase
+                    .from('mesas')
+                    .insert(data)
+                if (error) throw error
+                alert('✅ Mesa creada correctamente')
+            }
+            
+            resetFormulario()
+            cargarMesas()
+        } catch (error) {
+            console.error('Error guardando mesa:', error)
+            alert('❌ Error al guardar la mesa: ' + error.message)
+        }
     }
 
-    const toggleMesa = async (mesaId) => {
-        const mesa = mesas.find(m => m.id === mesaId)
-        const nuevoEstado = mesa.estado === 'disponible' ? 'ocupada' : 'disponible'
+    const handleEditar = (mesa) => {
+        setEditandoId(mesa.id)
+        setFormData({
+            numero: mesa.numero.toString(),
+            capacidad: mesa.capacidad.toString(),
+            estado: mesa.estado
+        })
+        setMostrarFormulario(true)
+    }
 
-        const { error } = await supabase
-            .from('mesas')
-            .update({ estado: nuevoEstado })
-            .eq('id', mesaId)
-
-        if (!error) {
-            setMesas(mesas.map(m => 
-                m.id === mesaId ? { ...m, estado: nuevoEstado } : m
-            ))
+    const handleEliminar = async (id) => {
+        if (!confirm('¿Estás seguro de eliminar esta mesa?')) return
+        try {
+            const { error } = await supabase
+                .from('mesas')
+                .update({ activo: false })
+                .eq('id', id)
+            if (error) throw error
+            alert('✅ Mesa eliminada correctamente')
+            cargarMesas()
+        } catch (error) {
+            console.error('Error eliminando mesa:', error)
+            alert('❌ Error al eliminar la mesa')
         }
+    }
+
+    const handleEliminarPermanente = async (id) => {
+        if (!confirm('⚠️ ¿Eliminar PERMANENTEMENTE esta mesa? Esta acción NO se puede deshacer.')) return
+        try {
+            const { error } = await supabase
+                .from('mesas')
+                .delete()
+                .eq('id', id)
+            if (error) throw error
+            alert('✅ Mesa eliminada permanentemente')
+            cargarMesas()
+        } catch (error) {
+            console.error('Error eliminando mesa permanentemente:', error)
+            alert('❌ Error al eliminar la mesa')
+        }
+    }
+
+    const resetFormulario = () => {
+        setFormData({ numero: '', capacidad: 4, estado: 'disponible' })
+        setMostrarFormulario(false)
+        setEditandoId(null)
     }
 
     const getEstadoColor = (estado) => {
         const colores = {
-            disponible: 'bg-green-100 border-green-500 text-green-700',
-            ocupada: 'bg-yellow-100 border-yellow-500 text-yellow-700',
-            reservada: 'bg-blue-100 border-blue-500 text-blue-700',
+            disponible: 'bg-green-100 text-green-800',
+            ocupada: 'bg-yellow-100 text-yellow-800',
+            reservada: 'bg-blue-100 text-blue-800',
         }
-        return colores[estado] || 'bg-gray-100 border-gray-500'
-    }
-
-    const getEstadoEmoji = (estado) => {
-        const emojis = {
-            disponible: '✅',
-            ocupada: '🟡',
-            reservada: '🔵',
-        }
-        return emojis[estado] || '❓'
+        return colores[estado] || 'bg-gray-100 text-gray-800'
     }
 
     return (
@@ -102,118 +137,134 @@ export default function MesasPage() {
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h2 className="text-2xl font-bold">🍽️ Panel de Mesas</h2>
-                        <p className="text-sm text-gray-500">Gestiona las mesas y pedidos activos</p>
+                        <h2 className="text-2xl font-bold">🍽️ Gestión de Mesas</h2>
+                        <p className="text-sm text-gray-500">Administra las mesas del restaurante</p>
                     </div>
                     <button
-                        onClick={crearMesa}
-                        className="btn-primary text-sm flex items-center gap-2"
+                        onClick={() => {
+                            resetFormulario()
+                            setMostrarFormulario(!mostrarFormulario)
+                        }}
+                        className="btn-golden text-sm flex items-center gap-2"
                     >
                         <Plus size={18} />
-                        Agregar Mesa
+                        {mostrarFormulario ? 'Cancelar' : 'Nueva Mesa'}
                     </button>
                 </div>
 
-                {/* Información de mesero y cliente */}
-                <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <ClienteSelector value={cliente} onChange={setCliente} />
-                        <MeseroSelector value={mesero} onChange={setMesero} />
-                    </div>
-                </div>
-
-                {/* Grid de Mesas */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {cargando ? (
-                        <div className="col-span-full text-center py-12 text-gray-500">
-                            Cargando mesas...
-                        </div>
-                    ) : mesas.length === 0 ? (
-                        <div className="col-span-full text-center py-12 text-gray-500">
-                            <p className="text-4xl mb-2">🍽️</p>
-                            <p>No hay mesas registradas</p>
-                            <p className="text-sm">Haz clic en "Agregar Mesa" para empezar</p>
-                        </div>
-                    ) : (
-                        mesas.map((mesa) => (
-                            <div
-                                key={mesa.id}
-                                className={`bg-white rounded-xl shadow-sm p-4 border-2 transition-all cursor-pointer ${getEstadoColor(mesa.estado)}`}
-                                onClick={() => toggleMesa(mesa.id)}
-                            >
-                                <div className="text-center">
-                                    <div className="text-3xl mb-2">
-                                        {mesa.estado === 'disponible' ? '🪑' : '🍽️'}
-                                    </div>
-                                    <p className="font-bold text-lg">Mesa {mesa.numero}</p>
-                                    <p className="text-xs font-medium">
-                                        {mesa.estado.charAt(0).toUpperCase() + mesa.estado.slice(1)}
-                                    </p>
-                                    {mesa.estado === 'ocupada' && (
-                                        <Link
-                                            href={`/pedidos?mesa=${mesa.id}`}
-                                            className="mt-2 inline-block btn-primary text-xs py-1 px-3"
-                                        >
-                                            Ver Pedido
-                                        </Link>
-                                    )}
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-
-                {/* Pedidos Activos */}
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-                    <div className="px-4 py-3 bg-gray-50 border-b">
-                        <h3 className="font-semibold flex items-center gap-2">
-                            <Clock size={18} />
-                            Pedidos Activos
-                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full ml-2">
-                                {pedidosActivos.length}
-                            </span>
+                {mostrarFormulario && (
+                    <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-golden">
+                        <h3 className="text-lg font-semibold mb-4">
+                            {editandoId ? '✏️ Editar Mesa' : '📝 Nueva Mesa'}
                         </h3>
-                    </div>
-                    <div className="divide-y divide-gray-100">
-                        {pedidosActivos.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
-                                <p className="text-4xl mb-2">📭</p>
-                                <p>No hay pedidos activos</p>
-                            </div>
-                        ) : (
-                            pedidosActivos.slice(0, 5).map((pedido) => (
-                                <div key={pedido.id} className="flex justify-between items-center px-4 py-3 hover:bg-gray-50 transition-colors">
-                                    <div>
-                                        <p className="font-mono text-sm font-medium">
-                                            #{pedido.id.slice(0, 8)}
-                                        </p>
-                                        <p className="text-sm text-gray-600">
-                                            {pedido.usuarios?.avatar} {pedido.usuarios?.nombre}
-                                        </p>
-                                        <p className="text-xs text-gray-400">
-                                            {pedido.cliente}
-                                        </p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="font-bold text-orange-600">
-                                            {formatPrice(pedido.total)}
-                                        </p>
-                                        <span className={`text-xs badge ${
-                                            pedido.estado === 'pendiente' ? 'badge-warning' :
-                                            pedido.estado === 'preparando' ? 'badge-info' :
-                                            'badge-success'
-                                        }`}>
-                                            {pedido.estado}
-                                        </span>
-                                    </div>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="input-label">Número de mesa *</label>
+                                    <input
+                                        type="number"
+                                        value={formData.numero}
+                                        onChange={(e) => setFormData({...formData, numero: e.target.value})}
+                                        className="input-field"
+                                        placeholder="Ej: 1"
+                                        required
+                                    />
                                 </div>
-                            ))
-                        )}
-                        {pedidosActivos.length > 5 && (
-                            <div className="px-4 py-2 text-center text-sm text-gray-400">
-                                + {pedidosActivos.length - 5} pedidos más
+                                <div>
+                                    <label className="input-label">Capacidad</label>
+                                    <input
+                                        type="number"
+                                        value={formData.capacidad}
+                                        onChange={(e) => setFormData({...formData, capacidad: e.target.value})}
+                                        className="input-field"
+                                        placeholder="Ej: 4"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="input-label">Estado</label>
+                                    <select
+                                        value={formData.estado}
+                                        onChange={(e) => setFormData({...formData, estado: e.target.value})}
+                                        className="input-field"
+                                    >
+                                        <option value="disponible">🟢 Disponible</option>
+                                        <option value="ocupada">🟡 Ocupada</option>
+                                        <option value="reservada">🔵 Reservada</option>
+                                    </select>
+                                </div>
                             </div>
-                        )}
+                            <div className="flex space-x-3">
+                                <button type="submit" className="btn-golden">
+                                    {editandoId ? '💾 Actualizar' : '💾 Crear'}
+                                </button>
+                                <button type="button" onClick={resetFormulario} className="btn-secondary">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Número</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Capacidad</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {cargando ? (
+                                    <tr><td colSpan="5" className="text-center py-8 text-gray-500">Cargando...</td></tr>
+                                ) : mesas.length === 0 ? (
+                                    <tr><td colSpan="5" className="text-center py-8 text-gray-500">No hay mesas registradas</td></tr>
+                                ) : (
+                                    mesas.map((mesa) => (
+                                        <tr key={mesa.id} className={!mesa.activo ? 'bg-gray-50 opacity-60' : ''}>
+                                            <td className="px-4 py-3 text-gray-400">{mesa.id.slice(0, 6)}</td>
+                                            <td className="px-4 py-3 font-medium">Mesa {mesa.numero}</td>
+                                            <td className="px-4 py-3">{mesa.capacidad} personas</td>
+                                            <td className="px-4 py-3">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(mesa.estado)}`}>
+                                                    {mesa.estado.charAt(0).toUpperCase() + mesa.estado.slice(1)}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 space-x-2">
+                                                {mesa.activo ? (
+                                                    <>
+                                                        <button onClick={() => handleEditar(mesa)} className="text-blue-600 hover:text-blue-800 text-sm">
+                                                            Editar
+                                                        </button>
+                                                        <button onClick={() => handleEliminar(mesa.id)} className="text-red-600 hover:text-red-800 text-sm">
+                                                            Desactivar
+                                                        </button>
+                                                        <button onClick={() => handleEliminarPermanente(mesa.id)} className="text-red-800 hover:text-red-950 text-sm font-bold">
+                                                            🗑️
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button onClick={() => {
+                                                            supabase.from('mesas').update({ activo: true }).eq('id', mesa.id)
+                                                                .then(() => cargarMesas())
+                                                        }} className="text-green-600 hover:text-green-800 text-sm">
+                                                            Reactivar
+                                                        </button>
+                                                        <button onClick={() => handleEliminarPermanente(mesa.id)} className="text-red-800 hover:text-red-950 text-sm font-bold">
+                                                            🗑️
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

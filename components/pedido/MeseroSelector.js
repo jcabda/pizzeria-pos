@@ -21,7 +21,7 @@ export default function MeseroSelector({ value, onChange }) {
                 .order('nombre')
             
             setMeseros(data || [])
-            if (data && data.length > 0) {
+            if (data && data.length > 0 && !value) {
                 onChange(data[0].id)
             }
         } catch (error) {

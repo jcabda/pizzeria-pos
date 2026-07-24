@@ -4,23 +4,18 @@ import { Inter } from 'next/font/google'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-    title: 'Pizzería POS - Sistema de Punto de Venta',
+    title: 'Golden on Fire - Pizzería POS',
     description: 'Sistema de punto de venta para pizzería',
-}
-
-export const viewport = {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    themeColor: '#FF6B35',
+    viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+    themeColor: '#D4AF37',
 }
 
 export default function RootLayout({ children }) {
     return (
         <html lang="es">
             <head>
-                <meta name="theme-color" content="#FF6B35" />
+                <meta name="theme-color" content="#D4AF37" />
+                <link rel="icon" href="/favicon.ico" />
             </head>
             <body className={inter.className}>
                 {children}

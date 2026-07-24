@@ -4,6 +4,12 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { 
+    Home, ClipboardList, ChefHat, BarChart3, 
+    Users, Package, Pizza, FolderOpen, FileText,
+    LayoutDashboard, Shield, Settings, Ruler, Tag, Scale,
+    Utensils
+} from 'lucide-react'
 
 export default function DashboardLayout({ children }) {
     const [usuario, setUsuario] = useState(null)
@@ -35,7 +41,7 @@ export default function DashboardLayout({ children }) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="text-center">
-                    <div className="text-4xl mb-4 animate-pulse">🍕</div>
+                    <div className="text-4xl mb-4 animate-pulse">🔥</div>
                     <p className="text-gray-600">Cargando...</p>
                 </div>
             </div>
@@ -49,26 +55,37 @@ export default function DashboardLayout({ children }) {
 
     const esAdmin = usuario.rol === 'admin'
 
+    // Pestañas principales (todos los usuarios)
     const pestañasPrincipales = [
-        { href: '/dashboard', label: '📊 Inicio' },
-        { href: '/pedidos', label: '📝 Pedidos' },
-        { href: '/cocina', label: '👨‍🍳 Cocina' },
-        { href: '/estadisticas', label: '📊 Estadísticas' },
-        { href: '/mesas', label: '🍽️ Mesas' },
+        { href: '/dashboard', icon: LayoutDashboard, label: 'Inicio' },
+        { href: '/pedidos', icon: ClipboardList, label: 'Pedidos' },
+        { href: '/cocina', icon: ChefHat, label: 'Cocina' },
+        { href: '/comandas', icon: Utensils, label: 'Comandas' },
+        { href: '/estadisticas', icon: BarChart3, label: 'Estadísticas' },
     ]
 
-    const adminToolsPestaña = { href: '/admin', label: '🛡️ Admin Tools' }
+    // Admin Tools es una pestaña más (solo admin)
+    const adminToolsPestaña = { href: '/admin', icon: Shield, label: 'Admin Tools' }
 
+    // Sub-pestañas de Admin Tools
     const adminSubPestañas = [
-        { href: '/productos', label: '🍕 Productos' },
-        { href: '/inventario', label: '🧂 Inventario' },
-        { href: '/categorias', label: '📂 Categorías' },
-        { href: '/usuarios', label: '👥 Usuarios' },
-        { href: '/auditoria', label: '📋 Auditoría' },
+        { href: '/productos', icon: Pizza, label: 'Productos' },
+        { href: '/inventario', icon: Package, label: 'Inventario' },
+        { href: '/categorias', icon: FolderOpen, label: 'Categorías' },
+        { href: '/usuarios', icon: Users, label: 'Usuarios' },
+        { href: '/auditoria', icon: FileText, label: 'Auditoría' },
+        { href: '/admin/tamanios', icon: Ruler, label: 'Tamaños' },
+        { href: '/admin/tipos', icon: Tag, label: 'Tipos' },
+        { href: '/admin/unidades', icon: Scale, label: 'Unidades' },
     ]
 
     const isAdminToolsActive = pathname.startsWith('/admin') || 
-                               adminSubPestañas.some(p => pathname.startsWith(p.href))
+                               adminSubPestañas.some(p => pathname.startsWith(p.href)) ||
+                               pathname === '/productos' ||
+                               pathname === '/inventario' ||
+                               pathname === '/categorias' ||
+                               pathname === '/usuarios' ||
+                               pathname === '/auditoria'
 
     const allLinks = [...pestañasPrincipales]
     if (esAdmin) {
@@ -80,22 +97,25 @@ export default function DashboardLayout({ children }) {
             <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
-                        {/* ============================================
-                            LOGO CON IMAGEN
-                            ============================================ */}
+                        {/* LOGO GOLDEN ON FIRE */}
                         <Link href="/dashboard" className="flex items-center gap-3 flex-shrink-0">
                             <div className="relative w-10 h-10">
                                 <Image
                                     src="/images/logo.png"
-                                    alt="Pizzería POS"
+                                    alt="Golden on Fire"
                                     fill
                                     className="object-contain"
                                     priority
                                 />
+                                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 blur-xl opacity-30 animate-pulse -z-10"></div>
                             </div>
                             <div>
-                                <h1 className="text-lg font-bold text-gray-800">Pizzería POS</h1>
-                                <p className="text-xs text-gray-500 hidden sm:block">Sistema de punto de venta</p>
+                                <h1 className="text-lg font-bold">
+                                    <span className="text-golden">Golden</span>
+                                    <span className="text-red-600"> on </span>
+                                    <span className="text-orange-500">Fire</span>
+                                </h1>
+                                <p className="text-xs text-gray-500 hidden sm:block">🔥 Sistema de punto de venta</p>
                             </div>
                         </Link>
 
@@ -104,12 +124,13 @@ export default function DashboardLayout({ children }) {
                                 <Link
                                     key={link.href}
                                     href={link.href}
-                                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
                                         isActive(link.href)
                                             ? 'bg-orange-100 text-orange-700'
                                             : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'
                                     }`}
                                 >
+                                    <link.icon size={18} />
                                     {link.label}
                                 </Link>
                             ))}
@@ -117,13 +138,14 @@ export default function DashboardLayout({ children }) {
                             {esAdmin && (
                                 <Link
                                     href="/admin"
-                                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
                                         isAdminToolsActive
                                             ? 'bg-purple-100 text-purple-700'
                                             : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
                                     }`}
                                 >
-                                    🛡️ Admin Tools
+                                    <Shield size={18} />
+                                    Admin Tools
                                 </Link>
                             )}
                         </nav>
@@ -168,7 +190,8 @@ export default function DashboardLayout({ children }) {
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex items-center space-x-1 py-2 overflow-x-auto">
                             <span className="text-xs font-medium text-purple-600 mr-2 flex items-center gap-1">
-                                🛡️ Admin:
+                                <Shield size={14} />
+                                Admin:
                             </span>
                             {adminSubPestañas.map((link) => {
                                 const isSubActive = pathname === link.href || pathname.startsWith(link.href)
@@ -182,6 +205,7 @@ export default function DashboardLayout({ children }) {
                                                 : 'text-purple-700 hover:bg-purple-100'
                                         }`}
                                     >
+                                        <link.icon size={14} />
                                         {link.label}
                                     </Link>
                                 )
@@ -225,6 +249,7 @@ export default function DashboardLayout({ children }) {
                                             : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                                     }`}
                                 >
+                                    <link.icon size={18} />
                                     {link.label}
                                 </Link>
                             ))}

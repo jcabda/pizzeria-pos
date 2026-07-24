@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '@/components/DashboardLayout'
 import { supabase } from '@/lib/supabaseClient'
+import { Plus, Edit2, Trash2, RefreshCw, X, Check } from 'lucide-react'
 
 export default function UsuariosPage() {
     const [usuarios, setUsuarios] = useState([])
     const [cargando, setCargando] = useState(true)
     const [mostrarFormulario, setMostrarFormulario] = useState(false)
+    const [editandoId, setEditandoId] = useState(null)
     const [formData, setFormData] = useState({
         nombre: '',
         usuario: '',
@@ -16,7 +18,7 @@ export default function UsuariosPage() {
         avatar: '👤'
     })
 
-    const AVATARS = ['👤', '🍕', '🚀', '🍔', '👨‍🍳', '👩‍🍳', '⭐', '💪', '🎯', '🔥']
+    const AVATARS = ['👤', '🍕', '🚀', '🍔', '👨‍🍳', '👩‍🍳', '⭐', '💪', '🎯', '🔥', '👑', '🦁']
 
     useEffect(() => {
         cargarUsuarios()
@@ -29,7 +31,6 @@ export default function UsuariosPage() {
                 .from('usuarios')
                 .select('*')
                 .order('nombre')
-            
             setUsuarios(data || [])
         } catch (error) {
             console.error('Error cargando usuarios:', error)
@@ -38,51 +39,94 @@ export default function UsuariosPage() {
         }
     }
 
+    const resetFormulario = () => {
+        setFormData({ nombre: '', usuario: '', contrasena: '', rol: 'empleado', avatar: '👤' })
+        setEditandoId(null)
+        setMostrarFormulario(false)
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         
-        if (!formData.nombre || !formData.usuario || !formData.contrasena) {
+        if (!formData.nombre || !formData.usuario) {
             alert('Por favor, completa todos los campos requeridos')
             return
         }
 
         try {
-            // Verificar si el usuario ya existe
-            const { data: existente } = await supabase
-                .from('usuarios')
-                .select('id')
-                .eq('usuario', formData.usuario)
-                .single()
-
-            if (existente) {
-                alert('❌ El nombre de usuario ya está en uso')
-                return
-            }
-
-            const { error } = await supabase
-                .from('usuarios')
-                .insert({
+            if (editandoId) {
+                const updateData = {
                     nombre: formData.nombre,
                     usuario: formData.usuario,
-                    contrasena: formData.contrasena,
                     rol: formData.rol,
                     avatar: formData.avatar,
-                    activo: true
-                })
+                }
+                if (formData.contrasena) {
+                    updateData.contrasena = formData.contrasena
+                }
 
-            if (error) throw error
-            alert('✅ Usuario creado correctamente')
-            setFormData({ nombre: '', usuario: '', contrasena: '', rol: 'empleado', avatar: '👤' })
-            setMostrarFormulario(false)
+                const { error } = await supabase
+                    .from('usuarios')
+                    .update(updateData)
+                    .eq('id', editandoId)
+
+                if (error) throw error
+                alert('✅ Usuario actualizado correctamente')
+            } else {
+                if (!formData.contrasena) {
+                    alert('La contraseña es obligatoria para nuevos usuarios')
+                    return
+                }
+
+                const { data: existente } = await supabase
+                    .from('usuarios')
+                    .select('id')
+                    .eq('usuario', formData.usuario)
+                    .single()
+
+                if (existente) {
+                    alert('❌ El nombre de usuario ya está en uso')
+                    return
+                }
+
+                const { error } = await supabase
+                    .from('usuarios')
+                    .insert({
+                        nombre: formData.nombre,
+                        usuario: formData.usuario,
+                        contrasena: formData.contrasena,
+                        rol: formData.rol,
+                        avatar: formData.avatar,
+                        activo: true
+                    })
+
+                if (error) throw error
+                alert('✅ Usuario creado correctamente')
+            }
+
+            resetFormulario()
             cargarUsuarios()
         } catch (error) {
-            console.error('Error creando usuario:', error)
-            alert('❌ Error al crear el usuario')
+            console.error('Error guardando usuario:', error)
+            alert('❌ Error al guardar el usuario: ' + error.message)
         }
     }
 
+    const handleEditar = (usuario) => {
+        setEditandoId(usuario.id)
+        setFormData({
+            nombre: usuario.nombre,
+            usuario: usuario.usuario,
+            contrasena: '',
+            rol: usuario.rol,
+            avatar: usuario.avatar || '👤'
+        })
+        setMostrarFormulario(true)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
     const handleEliminar = async (id) => {
-        if (!confirm('¿Estás seguro de eliminar este usuario?')) return
+        if (!confirm('¿Estás seguro de desactivar este usuario?')) return
 
         try {
             const { error } = await supabase
@@ -91,11 +135,11 @@ export default function UsuariosPage() {
                 .eq('id', id)
 
             if (error) throw error
-            alert('✅ Usuario eliminado correctamente')
+            alert('✅ Usuario desactivado correctamente')
             cargarUsuarios()
         } catch (error) {
-            console.error('Error eliminando usuario:', error)
-            alert('❌ Error al eliminar el usuario')
+            console.error('Error desactivando usuario:', error)
+            alert('❌ Error al desactivar el usuario')
         }
     }
 
@@ -115,85 +159,99 @@ export default function UsuariosPage() {
         }
     }
 
+    const handleEliminarPermanente = async (id) => {
+        if (!confirm('⚠️ ¿Estás seguro de ELIMINAR PERMANENTEMENTE este usuario? Esta acción NO se puede deshacer.')) return
+
+        try {
+            const { error } = await supabase
+                .from('usuarios')
+                .delete()
+                .eq('id', id)
+
+            if (error) throw error
+            alert('✅ Usuario eliminado permanentemente')
+            cargarUsuarios()
+        } catch (error) {
+            console.error('Error eliminando usuario:', error)
+            alert('❌ Error al eliminar el usuario')
+        }
+    }
+
     return (
         <DashboardLayout>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold">👥 Gestión de Usuarios</h2>
+                    <div>
+                        <h2 className="text-2xl font-bold">👥 Gestión de Usuarios</h2>
+                        <p className="text-sm text-gray-500">Crea, edita y administra los usuarios del sistema</p>
+                    </div>
                     <button
-                        onClick={() => setMostrarFormulario(!mostrarFormulario)}
-                        className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+                        onClick={() => {
+                            resetFormulario()
+                            setMostrarFormulario(!mostrarFormulario)
+                        }}
+                        className="btn-golden text-sm flex items-center gap-2"
                     >
-                        {mostrarFormulario ? '✕ Cancelar' : '+ Nuevo Usuario'}
+                        <Plus size={18} />
+                        {mostrarFormulario ? 'Cancelar' : 'Nuevo Usuario'}
                     </button>
                 </div>
 
-                {/* Formulario */}
                 {mostrarFormulario && (
-                    <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-orange-200">
-                        <h3 className="text-lg font-semibold mb-4">📝 Nuevo Usuario</h3>
+                    <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-golden animate-fade-in">
+                        <h3 className="text-lg font-semibold mb-4">
+                            {editandoId ? '✏️ Editar Usuario' : '📝 Nuevo Usuario'}
+                        </h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Nombre completo *
-                                    </label>
+                                    <label className="input-label">Nombre completo *</label>
                                     <input
                                         type="text"
                                         value={formData.nombre}
                                         onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        className="input-field"
                                         placeholder="Ej: María González"
                                         required
                                     />
                                 </div>
-
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Usuario *
-                                    </label>
+                                    <label className="input-label">Usuario *</label>
                                     <input
                                         type="text"
                                         value={formData.usuario}
                                         onChange={(e) => setFormData({...formData, usuario: e.target.value.toLowerCase()})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        className="input-field"
                                         placeholder="Ej: maria"
                                         required
                                     />
                                 </div>
-
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Contraseña *
+                                    <label className="input-label">
+                                        Contraseña {editandoId ? '(dejar vacío para no cambiar)' : '*'}
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.contrasena}
                                         onChange={(e) => setFormData({...formData, contrasena: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                        placeholder="Ej: 123456"
-                                        required
+                                        className="input-field"
+                                        placeholder={editandoId ? 'Nueva contraseña (opcional)' : 'Ej: 123456'}
+                                        required={!editandoId}
                                     />
                                 </div>
-
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Rol
-                                    </label>
+                                    <label className="input-label">Rol</label>
                                     <select
                                         value={formData.rol}
                                         onChange={(e) => setFormData({...formData, rol: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        className="input-field"
                                     >
                                         <option value="empleado">👨‍🍳 Empleado</option>
                                         <option value="admin">👑 Administrador</option>
                                     </select>
                                 </div>
-
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Avatar (elige uno)
-                                    </label>
+                                    <label className="input-label">Avatar (elige uno)</label>
                                     <div className="flex flex-wrap gap-2">
                                         {AVATARS.map((emoji) => (
                                             <button
@@ -210,22 +268,11 @@ export default function UsuariosPage() {
                                     </div>
                                 </div>
                             </div>
-
                             <div className="flex space-x-3">
-                                <button
-                                    type="submit"
-                                    className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                                >
-                                    💾 Crear Usuario
+                                <button type="submit" className="btn-golden">
+                                    {editandoId ? '💾 Actualizar' : '💾 Crear Usuario'}
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setMostrarFormulario(false)
-                                        setFormData({ nombre: '', usuario: '', contrasena: '', rol: 'empleado', avatar: '👤' })
-                                    }}
-                                    className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-                                >
+                                <button type="button" onClick={resetFormulario} className="btn-secondary">
                                     Cancelar
                                 </button>
                             </div>
@@ -233,25 +280,26 @@ export default function UsuariosPage() {
                     </div>
                 )}
 
-                {/* Lista de usuarios */}
-                {cargando ? (
-                    <div className="text-center py-8 text-gray-500">Cargando usuarios...</div>
-                ) : (
-                    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avatar</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rol</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {usuarios.map((usuario) => (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avatar</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rol</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {cargando ? (
+                                    <tr><td colSpan="6" className="text-center py-8 text-gray-500">Cargando...</td></tr>
+                                ) : usuarios.length === 0 ? (
+                                    <tr><td colSpan="6" className="text-center py-8 text-gray-500">No hay usuarios registrados</td></tr>
+                                ) : (
+                                    usuarios.map((usuario) => (
                                         <tr key={usuario.id} className={!usuario.activo ? 'bg-gray-50 opacity-60' : ''}>
                                             <td className="px-4 py-3 text-2xl">{usuario.avatar || '👤'}</td>
                                             <td className="px-4 py-3 font-medium">{usuario.nombre}</td>
@@ -272,35 +320,50 @@ export default function UsuariosPage() {
                                             </td>
                                             <td className="px-4 py-3 space-x-2">
                                                 {usuario.activo ? (
-                                                    <button
-                                                        onClick={() => handleEliminar(usuario.id)}
-                                                        className="text-red-600 hover:text-red-800 text-sm"
-                                                    >
-                                                        Eliminar
-                                                    </button>
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleEditar(usuario)}
+                                                            className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                                                        >
+                                                            <Edit2 size={14} /> Editar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEliminar(usuario.id)}
+                                                            className="text-red-600 hover:text-red-800 text-sm flex items-center gap-1"
+                                                        >
+                                                            <Trash2 size={14} /> Desactivar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEliminarPermanente(usuario.id)}
+                                                            className="text-red-800 hover:text-red-950 text-sm flex items-center gap-1 font-bold"
+                                                        >
+                                                            🗑️ Eliminar
+                                                        </button>
+                                                    </>
                                                 ) : (
-                                                    <button
-                                                        onClick={() => handleReactivar(usuario.id)}
-                                                        className="text-green-600 hover:text-green-800 text-sm"
-                                                    >
-                                                        Reactivar
-                                                    </button>
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleReactivar(usuario.id)}
+                                                            className="text-green-600 hover:text-green-800 text-sm flex items-center gap-1"
+                                                        >
+                                                            <RefreshCw size={14} /> Reactivar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEliminarPermanente(usuario.id)}
+                                                            className="text-red-800 hover:text-red-950 text-sm flex items-center gap-1 font-bold"
+                                                        >
+                                                            🗑️ Eliminar
+                                                        </button>
+                                                    </>
                                                 )}
                                             </td>
                                         </tr>
-                                    ))}
-                                    {usuarios.length === 0 && (
-                                        <tr>
-                                            <td colSpan="6" className="text-center py-8 text-gray-500">
-                                                No hay usuarios registrados
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                )}
+                </div>
             </div>
         </DashboardLayout>
     )

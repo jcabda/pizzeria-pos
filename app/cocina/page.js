@@ -15,100 +15,6 @@ export default function CocinaPage() {
     const [nuevosPedidos, setNuevosPedidos] = useState([])
     const [sonidoActivo, setSonidoActivo] = useState(true)
     const intervalRef = useRef(null)
-    const audioRef = useRef(null)
-
-    // ============================================
-    // REPRODUCIR SONIDO DE NUEVO PEDIDO
-    // ============================================
-    const reproducirSonido = () => {
-        if (!sonidoActivo) return
-        try {
-            // Crear un sonido simple con Web Audio API
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-            const oscillator = audioCtx.createOscillator()
-            const gainNode = audioCtx.createGain()
-            
-            oscillator.connect(gainNode)
-            gainNode.connect(audioCtx.destination)
-            
-            oscillator.frequency.value = 800
-            oscillator.type = 'sine'
-            
-            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3)
-            
-            oscillator.start(audioCtx.currentTime)
-            oscillator.stop(audioCtx.currentTime + 0.3)
-            
-            // Segundo tono
-            setTimeout(() => {
-                const osc2 = audioCtx.createOscillator()
-                const gain2 = audioCtx.createGain()
-                osc2.connect(gain2)
-                gain2.connect(audioCtx.destination)
-                osc2.frequency.value = 1000
-                osc2.type = 'sine'
-                gain2.gain.setValueAtTime(0.3, audioCtx.currentTime)
-                gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2)
-                osc2.start(audioCtx.currentTime)
-                osc2.stop(audioCtx.currentTime + 0.2)
-            }, 150)
-        } catch (e) {
-            console.log('Sonido no disponible')
-        }
-    }
-
-    // ============================================
-    // SUSCRIPCIÓN EN TIEMPO REAL
-    // ============================================
-    useEffect(() => {
-        // Suscribirse a cambios en la tabla pedidos
-        const subscription = supabase
-            .channel('pedidos-cocina')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'pedidos'
-                },
-                (payload) => {
-                    const nuevoPedido = payload.new
-                    console.log('🆕 Nuevo pedido recibido:', nuevoPedido.id)
-                    
-                    // Agregar a la lista de nuevos pedidos
-                    setNuevosPedidos(prev => [...prev, nuevoPedido.id])
-                    
-                    // Reproducir sonido
-                    reproducirSonido()
-                    
-                    // Recargar pedidos
-                    cargarPedidos()
-                    
-                    // Mostrar notificación
-                    if (Notification.permission === 'granted') {
-                        new Notification('🍕 Nuevo pedido!', {
-                            body: `Pedido #${nuevoPedido.id.slice(0, 8)} - ${nuevoPedido.cliente || 'Cliente general'}`,
-                            icon: '🍕'
-                        })
-                    }
-                }
-            )
-            .subscribe()
-
-        // Solicitar permiso para notificaciones
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission()
-        }
-
-        return () => {
-            subscription.unsubscribe()
-        }
-    }, [])
-
-    // ============================================
-    // TEMPORIZADOR
-    // ============================================
 
     useEffect(() => {
         cargarPedidos()
@@ -143,6 +49,76 @@ export default function CocinaPage() {
             }
         }
     }, [pedidos])
+
+    useEffect(() => {
+        const subscription = supabase
+            .channel('pedidos-cocina')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'pedidos'
+                },
+                (payload) => {
+                    const nuevoPedido = payload.new
+                    setNuevosPedidos(prev => [...prev, nuevoPedido.id])
+                    reproducirSonido()
+                    cargarPedidos()
+                    if (Notification.permission === 'granted') {
+                        new Notification('🍕 Nuevo pedido!', {
+                            body: `Pedido #${nuevoPedido.id.slice(0, 8)} - ${nuevoPedido.cliente || 'Cliente general'}`,
+                            icon: '🍕'
+                        })
+                    }
+                }
+            )
+            .subscribe()
+
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission()
+        }
+
+        return () => {
+            subscription.unsubscribe()
+        }
+    }, [])
+
+    const reproducirSonido = () => {
+        if (!sonidoActivo) return
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+            const oscillator = audioCtx.createOscillator()
+            const gainNode = audioCtx.createGain()
+            
+            oscillator.connect(gainNode)
+            gainNode.connect(audioCtx.destination)
+            
+            oscillator.frequency.value = 800
+            oscillator.type = 'sine'
+            
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3)
+            
+            oscillator.start(audioCtx.currentTime)
+            oscillator.stop(audioCtx.currentTime + 0.3)
+            
+            setTimeout(() => {
+                const osc2 = audioCtx.createOscillator()
+                const gain2 = audioCtx.createGain()
+                osc2.connect(gain2)
+                gain2.connect(audioCtx.destination)
+                osc2.frequency.value = 1000
+                osc2.type = 'sine'
+                gain2.gain.setValueAtTime(0.3, audioCtx.currentTime)
+                gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2)
+                osc2.start(audioCtx.currentTime)
+                osc2.stop(audioCtx.currentTime + 0.2)
+            }, 150)
+        } catch (e) {
+            console.log('Sonido no disponible')
+        }
+    }
 
     const actualizarTiempos = () => {
         if (!pedidos || pedidos.length === 0) return
@@ -188,10 +164,6 @@ export default function CocinaPage() {
         
         setTiempos(nuevosTiempos)
     }
-
-    // ============================================
-    // CARGAR PEDIDOS
-    // ============================================
 
     const cargarPedidos = async () => {
         try {
@@ -261,7 +233,6 @@ export default function CocinaPage() {
                 })
             }
 
-            // Aplicar filtro
             let pedidosFiltrados = pedidosConDetalles
             if (filtro === 'activos') {
                 pedidosFiltrados = pedidosConDetalles.filter(p => 
@@ -284,8 +255,6 @@ export default function CocinaPage() {
             })
 
             setPedidos(pedidosFiltrados)
-
-            // Limpiar notificaciones de nuevos pedidos
             setNuevosPedidos([])
 
             setTimeout(() => {
@@ -299,10 +268,6 @@ export default function CocinaPage() {
             setCargando(false)
         }
     }
-
-    // ============================================
-    // ACTUALIZAR ESTADO
-    // ============================================
 
     const actualizarEstado = async (pedidoId, nuevoEstado) => {
         try {
@@ -362,10 +327,6 @@ export default function CocinaPage() {
             alert('Error al actualizar el estado')
         }
     }
-
-    // ============================================
-    // UTILIDADES
-    // ============================================
 
     const getEstadoEmoji = (estado) => {
         const emojis = {
@@ -454,11 +415,9 @@ export default function CocinaPage() {
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                {/* Header con notificaciones */}
                 <div className="flex flex-wrap justify-between items-center gap-4">
                     <div className="flex items-center gap-4">
                         <h2 className="text-2xl font-bold">👨‍🍳 Panel de Cocina</h2>
-                        {/* Indicador de nuevos pedidos */}
                         {nuevosPedidos.length > 0 && (
                             <span className="flex items-center gap-1 bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium animate-pulse">
                                 <BellRing size={16} />
@@ -480,16 +439,12 @@ export default function CocinaPage() {
                             <Clock size={14} className="text-green-500 animate-pulse" />
                             Tiempo real
                         </span>
-                        <button
-                            onClick={cargarPedidos}
-                            className="btn-secondary text-sm py-1 px-3"
-                        >
+                        <button onClick={cargarPedidos} className="btn-secondary text-sm py-1 px-3">
                             🔄 Actualizar
                         </button>
                     </div>
                 </div>
 
-                {/* Filtros simplificados */}
                 <div className="flex flex-wrap gap-2">
                     <button
                         onClick={() => setFiltro('activos')}
@@ -560,7 +515,6 @@ export default function CocinaPage() {
                                     key={pedido.id}
                                     className={`bg-white rounded-xl shadow-md p-4 border-l-4 ${getEstadoColor(pedido.estado)} hover:shadow-lg transition-shadow ${!esActivo ? 'opacity-75' : ''} ${esNuevo ? 'ring-2 ring-orange-400 animate-pulse-soft' : ''}`}
                                 >
-                                    {/* Encabezado con badge de nuevo */}
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
                                             <p className="font-mono text-sm font-bold text-gray-600 flex items-center gap-2">
