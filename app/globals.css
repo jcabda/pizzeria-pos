@@ -3,9 +3,6 @@
 @tailwind utilities;
 
 @layer base {
-    /* ============================================
-       MARCA GOLDEN ON FIRE - VARIABLES
-       ============================================ */
     :root {
         --golden: #D4AF37;
         --golden-light: #F5D76E;
@@ -30,15 +27,12 @@
     .text-golden { color: #D4AF37; }
     .text-fire { color: #E74C3C; }
     .text-fire-orange { color: #F39C12; }
-    .text-dark-golden { color: #1A1A2E; }
 
     /* ============================================
        FONDOS DE MARCA
        ============================================ */
     .bg-golden { background-color: #D4AF37; }
     .bg-fire { background-color: #E74C3C; }
-    .bg-fire-soft { background-color: #FDEBD0; }
-    .bg-dark-golden { background-color: #1A1A2E; }
     .bg-golden-light { background-color: #F5D76E; }
 
     /* ============================================
@@ -46,7 +40,6 @@
        ============================================ */
     .border-golden { border-color: #D4AF37; }
     .border-fire { border-color: #E74C3C; }
-    .border-golden-light { border-color: #F5D76E; }
 
     /* ============================================
        GRADIENTES DE MARCA
@@ -59,9 +52,6 @@
     }
     .golden-fire-gradient {
         background: linear-gradient(135deg, #D4AF37, #F39C12, #E74C3C);
-    }
-    .dark-golden-gradient {
-        background: linear-gradient(135deg, #1A1A2E, #2D2D44, #D4AF37);
     }
 
     /* ============================================
@@ -135,18 +125,15 @@
     .card-golden {
         @apply bg-white rounded-xl shadow-sm p-6 border-2 border-golden hover:shadow-md transition-all;
     }
-    .card-fire {
-        @apply bg-white rounded-xl shadow-sm p-6 border-2 border-fire hover:shadow-md transition-all;
-    }
     .card-hover {
         @apply bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md hover:border-golden transition-all hover:-translate-y-1;
     }
 
     /* ============================================
-       INPUTS DE MARCA
+       INPUTS - CORREGIDO (sin focus:ring-golden)
        ============================================ */
     .input-field {
-        @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-golden focus:border-transparent transition-all;
+        @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all;
     }
     .input-label {
         @apply block text-sm font-medium text-gray-700 mb-1;
@@ -176,9 +163,6 @@
     .badge-golden {
         @apply bg-yellow-100 text-yellow-800 border border-golden;
     }
-    .badge-fire {
-        @apply bg-red-100 text-red-800 border border-fire;
-    }
 
     /* ============================================
        ALERTAS DE MARCA
@@ -198,12 +182,9 @@
     .alert-info {
         @apply bg-blue-50 border-blue-500 text-blue-700;
     }
-    .alert-golden {
-        @apply bg-yellow-50 border-golden text-yellow-800;
-    }
 
     /* ============================================
-       TABLAS DE MARCA
+       TABLAS
        ============================================ */
     .table-container {
         @apply bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100;
@@ -245,22 +226,6 @@
         animation: fadeIn 0.3s ease-out;
     }
 
-    @keyframes flicker {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.8; }
-    }
-    .animate-flicker {
-        animation: flicker 1.5s ease-in-out infinite;
-    }
-
-    @keyframes golden-glow {
-        0%, 100% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); }
-        50% { box-shadow: 0 0 40px rgba(212, 175, 55, 0.5); }
-    }
-    .animate-golden-glow {
-        animation: golden-glow 2s ease-in-out infinite;
-    }
-
     @keyframes fire-pulse {
         0%, 100% { transform: scale(1); opacity: 0.9; }
         50% { transform: scale(1.05); opacity: 1; }
@@ -269,21 +234,12 @@
         animation: fire-pulse 1.2s ease-in-out infinite;
     }
 
-    @keyframes golden-float {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-6px); }
+    @keyframes golden-glow {
+        0%, 100% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); }
+        50% { box-shadow: 0 0 40px rgba(212, 175, 55, 0.5); }
     }
-    .animate-golden-float {
-        animation: golden-float 3s ease-in-out infinite;
-    }
-
-    @keyframes fire-spark {
-        0% { transform: scale(0); opacity: 1; }
-        50% { transform: scale(1.5); opacity: 0.8; }
-        100% { transform: scale(0); opacity: 0; }
-    }
-    .animate-fire-spark {
-        animation: fire-spark 1s ease-in-out infinite;
+    .animate-golden-glow {
+        animation: golden-glow 2s ease-in-out infinite;
     }
 
     @keyframes pulse-golden {
@@ -302,7 +258,6 @@
     .card { padding: 1rem; }
     .card-hover { padding: 1rem; }
     .card-golden { padding: 1rem; }
-    .card-fire { padding: 1rem; }
     .input-field { font-size: 0.875rem; padding: 0.625rem 0.75rem; }
     .btn-primary, .btn-secondary, .btn-success, .btn-danger, .btn-outline, .btn-golden, .btn-fire {
         padding: 0.5rem 1rem; font-size: 0.75rem;
@@ -333,7 +288,6 @@
     .card { padding: 1.25rem; }
     .card-hover { padding: 1.25rem; }
     .card-golden { padding: 1.25rem; }
-    .card-fire { padding: 1.25rem; }
     .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
     .grid-cols-4 { grid-template-columns: repeat(3, 1fr); }
     .lg\:col-span-2 { grid-column: span 1; }
