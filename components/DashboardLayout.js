@@ -8,7 +8,8 @@ import {
     Home, ClipboardList, ChefHat, BarChart3, 
     Users, Package, Pizza, FolderOpen, FileText,
     LayoutDashboard, Shield, Settings, Ruler, Tag, Scale,
-    Utensils
+    Utensils, Coffee, Truck, LogOut, Menu, X, Bell,
+    Eye, EyeOff
 } from 'lucide-react'
 
 export default function DashboardLayout({ children }) {
@@ -55,30 +56,77 @@ export default function DashboardLayout({ children }) {
 
     const esAdmin = usuario.rol === 'admin'
 
-    // Pestañas principales (todos los usuarios)
+    // ============================================
+    // OBTENER PERMISOS DEL USUARIO
+    // ============================================
+    const obtenerPermisos = () => {
+        // Si es admin, tiene todos los permisos
+        if (usuario.rol === 'admin') {
+            return {
+                productos: true,
+                inventario: true,
+                categorias: true,
+                usuarios: true,
+                auditoria: true,
+                tamanios: true,
+                tipos: true,
+                unidades: true
+            }
+        }
+        // Si no, usar los permisos guardados
+        return usuario.permisos || {
+            productos: false,
+            inventario: false,
+            categorias: false,
+            usuarios: false,
+            auditoria: false,
+            tamanios: false,
+            tipos: false,
+            unidades: false
+        }
+    }
+
+    const permisos = obtenerPermisos()
+    const tienePermiso = (permiso) => {
+        return permisos[permiso] === true
+    }
+
+    // ============================================
+    // PESTAÑAS PRINCIPALES (todos los usuarios)
+    // ============================================
     const pestañasPrincipales = [
         { href: '/dashboard', icon: LayoutDashboard, label: 'Inicio' },
         { href: '/pedidos', icon: ClipboardList, label: 'Pedidos' },
         { href: '/cocina', icon: ChefHat, label: 'Cocina' },
-        { href: '/comandas', icon: Utensils, label: 'Comandas' },
+        { href: '/comandas', icon: Utensils, label: 'Mesas' },
         { href: '/estadisticas', icon: BarChart3, label: 'Estadísticas' },
     ]
 
-    // Admin Tools es una pestaña más (solo admin)
+    // ============================================
+    // ADMIN TOOLS (solo si tiene permisos)
+    // ============================================
     const adminToolsPestaña = { href: '/admin', icon: Shield, label: 'Admin Tools' }
 
-    // Sub-pestañas de Admin Tools
     const adminSubPestañas = [
-        { href: '/productos', icon: Pizza, label: 'Productos' },
-        { href: '/inventario', icon: Package, label: 'Inventario' },
-        { href: '/categorias', icon: FolderOpen, label: 'Categorías' },
-        { href: '/usuarios', icon: Users, label: 'Usuarios' },
-        { href: '/auditoria', icon: FileText, label: 'Auditoría' },
-        { href: '/admin/tamanios', icon: Ruler, label: 'Tamaños' },
-        { href: '/admin/tipos', icon: Tag, label: 'Tipos' },
-        { href: '/admin/unidades', icon: Scale, label: 'Unidades' },
+        { href: '/productos', icon: Pizza, label: 'Productos', permiso: 'productos' },
+        { href: '/inventario', icon: Package, label: 'Inventario', permiso: 'inventario' },
+        { href: '/categorias', icon: FolderOpen, label: 'Categorías', permiso: 'categorias' },
+        { href: '/usuarios', icon: Users, label: 'Usuarios', permiso: 'usuarios' },
+        { href: '/auditoria', icon: FileText, label: 'Auditoría', permiso: 'auditoria' },
+        { href: '/admin/tamanios', icon: Ruler, label: 'Tamaños', permiso: 'tamanios' },
+        { href: '/admin/tipos', icon: Tag, label: 'Tipos', permiso: 'tipos' },
+        { href: '/admin/unidades', icon: Scale, label: 'Unidades', permiso: 'unidades' },
     ]
 
+    // Filtrar sub-pestañas según permisos
+    const adminSubPestañasFiltradas = adminSubPestañas.filter(item => {
+        // Admin tiene todo
+        if (usuario.rol === 'admin') return true
+        // Otros roles: verificar permiso
+        return tienePermiso(item.permiso)
+    })
+
+    // Determinar si Admin Tools está activo
     const isAdminToolsActive = pathname.startsWith('/admin') || 
                                adminSubPestañas.some(p => pathname.startsWith(p.href)) ||
                                pathname === '/productos' ||
@@ -87,11 +135,18 @@ export default function DashboardLayout({ children }) {
                                pathname === '/usuarios' ||
                                pathname === '/auditoria'
 
+    // Construir menú completo
     const allLinks = [...pestañasPrincipales]
-    if (esAdmin) {
+    
+    // Agregar Admin Tools solo si tiene al menos un permiso o es admin
+    const tieneAlgunPermiso = Object.values(permisos).some(v => v === true)
+    if (esAdmin || tieneAlgunPermiso) {
         allLinks.push(adminToolsPestaña)
     }
 
+    // ============================================
+    // RENDER
+    // ============================================
     return (
         <div className="min-h-screen bg-gray-50">
             <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
@@ -119,6 +174,7 @@ export default function DashboardLayout({ children }) {
                             </div>
                         </Link>
 
+                        {/* MENÚ DE ESCRITORIO */}
                         <nav className="hidden lg:flex items-center space-x-1">
                             {pestañasPrincipales.map((link) => (
                                 <Link
@@ -135,7 +191,8 @@ export default function DashboardLayout({ children }) {
                                 </Link>
                             ))}
 
-                            {esAdmin && (
+                            {/* Admin Tools - solo si tiene permisos */}
+                            {(esAdmin || tieneAlgunPermiso) && (
                                 <Link
                                     href="/admin"
                                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
@@ -150,6 +207,7 @@ export default function DashboardLayout({ children }) {
                             )}
                         </nav>
 
+                        {/* USER MENU */}
                         <div className="flex items-center space-x-4">
                             <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
                                 <span className="text-xl">{usuario.avatar || '👤'}</span>
@@ -184,8 +242,8 @@ export default function DashboardLayout({ children }) {
                 </div>
             </header>
 
-            {/* SUB-MENÚ ADMIN */}
-            {esAdmin && isAdminToolsActive && (
+            {/* SUB-MENÚ ADMIN - solo si tiene permisos y está activo */}
+            {(esAdmin || tieneAlgunPermiso) && isAdminToolsActive && adminSubPestañasFiltradas.length > 0 && (
                 <div className="bg-purple-50/80 border-b border-purple-200 shadow-sm">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex items-center space-x-1 py-2 overflow-x-auto">
@@ -193,7 +251,7 @@ export default function DashboardLayout({ children }) {
                                 <Shield size={14} />
                                 Admin:
                             </span>
-                            {adminSubPestañas.map((link) => {
+                            {adminSubPestañasFiltradas.map((link) => {
                                 const isSubActive = pathname === link.href || pathname.startsWith(link.href)
                                 return (
                                     <Link
@@ -261,7 +319,8 @@ export default function DashboardLayout({ children }) {
                                 }}
                                 className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all"
                             >
-                                🚪 Salir
+                                <LogOut size={18} />
+                                Salir
                             </button>
                         </nav>
                     </div>
