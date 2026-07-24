@@ -4,110 +4,123 @@ import { useState, useEffect } from 'react'
 import DashboardLayout from '@/components/DashboardLayout'
 import { supabase } from '@/lib/supabaseClient'
 import { formatPrice } from '@/lib/currency'
-import { Plus, Edit2, Trash2, RefreshCw } from 'lucide-react'
+import { Plus, Edit2, Trash2, RefreshCw, Search, X, Check, Pizza, Tag, DollarSign, Package, Coffee, Utensils } from 'lucide-react'
 
 export default function ProductosPage() {
     const [productos, setProductos] = useState([])
-    const [categorias, setCategorias] = useState([])
-    const [tamanios, setTamanios] = useState([])
-    const [tipos, setTipos] = useState(['simple', 'pizza_fija', 'pizza_personalizable'])
     const [cargando, setCargando] = useState(true)
     const [mostrarFormulario, setMostrarFormulario] = useState(false)
     const [editandoId, setEditandoId] = useState(null)
-    const [nuevoTipo, setNuevoTipo] = useState('')
+    const [categorias, setCategorias] = useState([])
+    const [busqueda, setBusqueda] = useState('')
     const [formData, setFormData] = useState({
         nombre: '',
+        descripcion: '',
+        precio_venta: 0,
+        costo: 0,
+        stock: 0,
         categoria_id: '',
-        tamanio_id: '',
-        precio_venta: '',
-        tipo: 'simple',
-        stock: ''
+        tipo: 'producto',
+        activo: true
     })
 
     useEffect(() => {
-        cargarDatos()
+        cargarProductos()
+        cargarCategorias()
     }, [])
 
-    const cargarDatos = async () => {
+    const cargarProductos = async () => {
         setCargando(true)
         try {
-            const { data: categoriasData } = await supabase
-                .from('categorias')
-                .select('*')
-                .eq('activo', true)
-                .order('nombre')
-            setCategorias(categoriasData || [])
-
-            const { data: tamaniosData } = await supabase
-                .from('tamanios_pizza')
-                .select('*')
-                .eq('activo', true)
-                .order('nombre')
-            setTamanios(tamaniosData || [])
-
-            const { data: productosData } = await supabase
+            const { data } = await supabase
                 .from('productos_menu')
                 .select(`
                     *,
-                    categorias (nombre),
-                    tamanios_pizza (nombre, porciones, precio_base)
+                    categorias (nombre)
                 `)
                 .order('nombre')
-            
-            setProductos(productosData || [])
+            setProductos(data || [])
         } catch (error) {
-            console.error('Error cargando datos:', error)
+            console.error('Error cargando productos:', error)
         } finally {
             setCargando(false)
         }
     }
 
-    const agregarTipo = () => {
-        if (nuevoTipo.trim() && !tipos.includes(nuevoTipo.trim())) {
-            setTipos([...tipos, nuevoTipo.trim()])
-            setNuevoTipo('')
-            alert(`✅ Tipo "${nuevoTipo.trim()}" agregado correctamente`)
+    const cargarCategorias = async () => {
+        try {
+            const { data } = await supabase
+                .from('categorias')
+                .select('*')
+                .eq('activo', true)
+                .order('nombre')
+            setCategorias(data || [])
+        } catch (error) {
+            console.error('Error cargando categorías:', error)
         }
     }
 
-    const eliminarTipo = (tipo) => {
-        if (confirm(`¿Eliminar el tipo "${tipo}"?`)) {
-            setTipos(tipos.filter(t => t !== tipo))
-        }
+    const resetFormulario = () => {
+        setFormData({
+            nombre: '',
+            descripcion: '',
+            precio_venta: 0,
+            costo: 0,
+            stock: 0,
+            categoria_id: '',
+            tipo: 'producto',
+            activo: true
+        })
+        setEditandoId(null)
+        setMostrarFormulario(false)
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
         
-        const data = {
-            nombre: formData.nombre,
-            categoria_id: formData.categoria_id || null,
-            tamanio_id: formData.tamanio_id || null,
-            precio_venta: parseFloat(formData.precio_venta),
-            tipo: formData.tipo,
-            stock: formData.tipo === 'simple' ? parseInt(formData.stock) || 0 : 0,
-            toppings_fijos: '[]',
-            activo: true
+        if (!formData.nombre || !formData.categoria_id || formData.precio_venta <= 0) {
+            alert('Por favor, completa todos los campos requeridos')
+            return
         }
 
         try {
             if (editandoId) {
                 const { error } = await supabase
                     .from('productos_menu')
-                    .update(data)
+                    .update({
+                        nombre: formData.nombre,
+                        descripcion: formData.descripcion,
+                        precio_venta: formData.precio_venta,
+                        costo: formData.costo,
+                        stock: formData.stock,
+                        categoria_id: formData.categoria_id,
+                        tipo: formData.tipo,
+                        activo: formData.activo
+                    })
                     .eq('id', editandoId)
+
                 if (error) throw error
                 alert('✅ Producto actualizado correctamente')
             } else {
                 const { error } = await supabase
                     .from('productos_menu')
-                    .insert(data)
+                    .insert({
+                        nombre: formData.nombre,
+                        descripcion: formData.descripcion,
+                        precio_venta: formData.precio_venta,
+                        costo: formData.costo,
+                        stock: formData.stock,
+                        categoria_id: formData.categoria_id,
+                        tipo: formData.tipo,
+                        activo: formData.activo
+                    })
+
                 if (error) throw error
                 alert('✅ Producto creado correctamente')
             }
-            
+
             resetFormulario()
-            cargarDatos()
+            cargarProductos()
         } catch (error) {
             console.error('Error guardando producto:', error)
             alert('❌ Error al guardar el producto: ' + error.message)
@@ -118,44 +131,33 @@ export default function ProductosPage() {
         setEditandoId(producto.id)
         setFormData({
             nombre: producto.nombre,
+            descripcion: producto.descripcion || '',
+            precio_venta: producto.precio_venta || 0,
+            costo: producto.costo || 0,
+            stock: producto.stock || 0,
             categoria_id: producto.categoria_id || '',
-            tamanio_id: producto.tamanio_id || '',
-            precio_venta: producto.precio_venta.toString(),
-            tipo: producto.tipo,
-            stock: producto.stock?.toString() || '0'
+            tipo: producto.tipo || 'producto',
+            activo: producto.activo !== false
         })
         setMostrarFormulario(true)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
     const handleEliminar = async (id) => {
-        if (!confirm('¿Estás seguro de eliminar este producto?')) return
+        if (!confirm('¿Estás seguro de desactivar este producto?')) return
+
         try {
             const { error } = await supabase
                 .from('productos_menu')
                 .update({ activo: false })
                 .eq('id', id)
-            if (error) throw error
-            alert('✅ Producto eliminado correctamente')
-            cargarDatos()
-        } catch (error) {
-            console.error('Error eliminando producto:', error)
-            alert('❌ Error al eliminar el producto')
-        }
-    }
 
-    const handleEliminarPermanente = async (id) => {
-        if (!confirm('⚠️ ¿Eliminar PERMANENTEMENTE este producto? Esta acción NO se puede deshacer.')) return
-        try {
-            const { error } = await supabase
-                .from('productos_menu')
-                .delete()
-                .eq('id', id)
             if (error) throw error
-            alert('✅ Producto eliminado permanentemente')
-            cargarDatos()
+            alert('✅ Producto desactivado correctamente')
+            cargarProductos()
         } catch (error) {
-            console.error('Error eliminando producto permanentemente:', error)
-            alert('❌ Error al eliminar el producto')
+            console.error('Error desactivando producto:', error)
+            alert('❌ Error al desactivar el producto')
         }
     }
 
@@ -165,46 +167,44 @@ export default function ProductosPage() {
                 .from('productos_menu')
                 .update({ activo: true })
                 .eq('id', id)
+
             if (error) throw error
             alert('✅ Producto reactivado correctamente')
-            cargarDatos()
+            cargarProductos()
         } catch (error) {
             console.error('Error reactivando producto:', error)
             alert('❌ Error al reactivar el producto')
         }
     }
 
-    const resetFormulario = () => {
-        setFormData({ nombre: '', categoria_id: '', tamanio_id: '', precio_venta: '', tipo: 'simple', stock: '' })
-        setMostrarFormulario(false)
-        setEditandoId(null)
-    }
+    const productosFiltrados = productos.filter(p => {
+        if (!busqueda) return true
+        return p.nombre?.toLowerCase().includes(busqueda.toLowerCase())
+    })
 
-    const getTipoLabel = (tipo) => {
-        const tiposMap = {
-            simple: '📦 Simple',
-            pizza_fija: '🍕 Pizza Fija',
-            pizza_personalizable: '🎨 Personalizable'
+    const getTipoIcon = (tipo) => {
+        const iconos = {
+            pizza: '🍕',
+            bebida: '🥤',
+            postre: '🍨',
+            entrada: '🍢',
+            producto: '📦'
         }
-        return tiposMap[tipo] || tipo
-    }
-
-    const getEstadoColor = (tipo, stock) => {
-        if (tipo === 'simple') {
-            if (stock <= 0) return 'bg-red-100 text-red-800'
-            if (stock < 10) return 'bg-yellow-100 text-yellow-800'
-            return 'bg-green-100 text-green-800'
-        }
-        return 'bg-blue-100 text-blue-800'
+        return iconos[tipo] || '📦'
     }
 
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap justify-between items-center gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold">🍕 Gestión de Productos</h2>
-                        <p className="text-sm text-gray-500">Administra los productos del menú</p>
+                        <h2 className="text-2xl font-bold text-white">
+                            <span className="text-gradient-golden">Golden</span>
+                            <span className="text-white"> on </span>
+                            <span className="text-gradient-fire">Fire</span>
+                            <span className="text-white/60"> - Productos</span>
+                        </h2>
+                        <p className="text-sm text-white/40">Gestiona el menú de productos</p>
                     </div>
                     <button
                         onClick={() => {
@@ -213,45 +213,14 @@ export default function ProductosPage() {
                         }}
                         className="btn-golden text-sm flex items-center gap-2"
                     >
-                        {mostrarFormulario ? '✕ Cancelar' : '+ Nuevo Producto'}
+                        <Plus size={18} />
+                        {mostrarFormulario ? 'Cancelar' : 'Nuevo Producto'}
                     </button>
                 </div>
 
-                {/* Gestión de Tipos */}
-                <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-2">🏷️ Tipos de productos</h3>
-                    <div className="flex flex-wrap gap-2 items-center">
-                        <div className="flex flex-wrap gap-2">
-                            {tipos.map((tipo) => (
-                                <span key={tipo} className="inline-flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full text-xs">
-                                    {tipo}
-                                    <button
-                                        onClick={() => eliminarTipo(tipo)}
-                                        className="text-red-500 hover:text-red-700"
-                                    >
-                                        ✕
-                                    </button>
-                                </span>
-                            ))}
-                        </div>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={nuevoTipo}
-                                onChange={(e) => setNuevoTipo(e.target.value)}
-                                placeholder="Nuevo tipo..."
-                                className="input-field text-sm py-1 px-2 w-32"
-                            />
-                            <button onClick={agregarTipo} className="btn-primary text-sm py-1 px-3">
-                                Agregar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
                 {mostrarFormulario && (
-                    <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-golden">
-                        <h3 className="text-lg font-semibold mb-4">
+                    <div className="glass-golden rounded-xl p-6 border border-golden/30 animate-fade-in-up">
+                        <h3 className="text-lg font-semibold mb-4 text-white">
                             {editandoId ? '✏️ Editar Producto' : '📝 Nuevo Producto'}
                         </h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
@@ -263,74 +232,100 @@ export default function ProductosPage() {
                                         value={formData.nombre}
                                         onChange={(e) => setFormData({...formData, nombre: e.target.value})}
                                         className="input-field"
+                                        placeholder="Ej: Pizza Margarita"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="input-label">Categoría</label>
+                                    <label className="input-label">Categoría *</label>
                                     <select
                                         value={formData.categoria_id}
                                         onChange={(e) => setFormData({...formData, categoria_id: e.target.value})}
                                         className="input-field"
+                                        required
                                     >
-                                        <option value="">Sin categoría</option>
-                                        {categorias.map((cat) => (
+                                        <option value="">Seleccionar categoría</option>
+                                        {categorias.map(cat => (
                                             <option key={cat.id} value={cat.id}>{cat.nombre}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="input-label">Tipo *</label>
+                                    <label className="input-label">Precio Venta *</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={formData.precio_venta}
+                                        onChange={(e) => setFormData({...formData, precio_venta: parseFloat(e.target.value) || 0})}
+                                        className="input-field"
+                                        placeholder="0.00"
+                                        min="0"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="input-label">Costo</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={formData.costo}
+                                        onChange={(e) => setFormData({...formData, costo: parseFloat(e.target.value) || 0})}
+                                        className="input-field"
+                                        placeholder="0.00"
+                                        min="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="input-label">Stock</label>
+                                    <input
+                                        type="number"
+                                        value={formData.stock}
+                                        onChange={(e) => setFormData({...formData, stock: parseInt(e.target.value) || 0})}
+                                        className="input-field"
+                                        placeholder="0"
+                                        min="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="input-label">Tipo</label>
                                     <select
                                         value={formData.tipo}
                                         onChange={(e) => setFormData({...formData, tipo: e.target.value})}
                                         className="input-field"
                                     >
-                                        {tipos.map((t) => (
-                                            <option key={t} value={t}>{t}</option>
-                                        ))}
+                                        <option value="producto">📦 Producto</option>
+                                        <option value="pizza">🍕 Pizza</option>
+                                        <option value="bebida">🥤 Bebida</option>
+                                        <option value="postre">🍨 Postre</option>
+                                        <option value="entrada">🍢 Entrada</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="input-label">Tamaño (solo pizzas)</label>
-                                    <select
-                                        value={formData.tamanio_id}
-                                        onChange={(e) => setFormData({...formData, tamanio_id: e.target.value})}
+                                <div className="md:col-span-2">
+                                    <label className="input-label">Descripción</label>
+                                    <textarea
+                                        value={formData.descripcion}
+                                        onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
                                         className="input-field"
-                                    >
-                                        <option value="">Sin tamaño</option>
-                                        {tamanios.map((t) => (
-                                            <option key={t.id} value={t.id}>{t.nombre} ({t.porciones} porciones)</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="input-label">Precio *</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={formData.precio_venta}
-                                        onChange={(e) => setFormData({...formData, precio_venta: e.target.value})}
-                                        className="input-field"
-                                        required
+                                        rows="2"
+                                        placeholder="Descripción del producto"
                                     />
                                 </div>
-                                {formData.tipo === 'simple' && (
-                                    <div>
-                                        <label className="input-label">Stock</label>
+                                <div className="flex items-center gap-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
                                         <input
-                                            type="number"
-                                            value={formData.stock}
-                                            onChange={(e) => setFormData({...formData, stock: e.target.value})}
-                                            className="input-field"
-                                            placeholder="0"
+                                            type="checkbox"
+                                            checked={formData.activo}
+                                            onChange={(e) => setFormData({...formData, activo: e.target.checked})}
+                                            className="w-4 h-4 rounded accent-golden"
                                         />
-                                    </div>
-                                )}
+                                        <span className="text-sm text-white/60">Activo</span>
+                                    </label>
+                                </div>
                             </div>
-                            <div className="flex space-x-3">
+
+                            <div className="flex space-x-3 pt-4">
                                 <button type="submit" className="btn-golden">
-                                    {editandoId ? '💾 Actualizar' : '💾 Crear'}
+                                    {editandoId ? '💾 Actualizar' : '💾 Crear Producto'}
                                 </button>
                                 <button type="button" onClick={resetFormulario} className="btn-secondary">
                                     Cancelar
@@ -340,72 +335,81 @@ export default function ProductosPage() {
                     </div>
                 )}
 
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                <div className="flex gap-3 items-center">
+                    <div className="relative flex-1">
+                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                        <input
+                            type="text"
+                            value={busqueda}
+                            onChange={(e) => setBusqueda(e.target.value)}
+                            className="input-field pl-10"
+                            placeholder="🔍 Buscar productos..."
+                        />
+                    </div>
+                    <button onClick={cargarProductos} className="btn-secondary text-sm">
+                        <RefreshCw size={16} />
+                    </button>
+                </div>
+
+                <div className="glass rounded-xl overflow-hidden border border-white/10">
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-gray-50">
+                            <thead className="bg-white/5 border-b border-white/10">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tamaño</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Nombre</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Categoría</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Tipo</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Precio</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Stock</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Estado</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-white/5">
                                 {cargando ? (
-                                    <tr><td colSpan="7" className="text-center py-8 text-gray-500">Cargando...</td></tr>
-                                ) : productos.length === 0 ? (
-                                    <tr><td colSpan="7" className="text-center py-8 text-gray-500">No hay productos registrados</td></tr>
+                                    <tr><td colSpan="7" className="text-center py-8 text-white/40">Cargando...</td></tr>
+                                ) : productosFiltrados.length === 0 ? (
+                                    <tr><td colSpan="7" className="text-center py-8 text-white/40">No hay productos</td></tr>
                                 ) : (
-                                    productos.map((producto) => (
-                                        <tr key={producto.id} className={!producto.activo ? 'bg-gray-50 opacity-60' : ''}>
-                                            <td className="px-4 py-3 font-medium">{producto.nombre}</td>
-                                            <td className="px-4 py-3">{producto.categorias?.nombre || '-'}</td>
+                                    productosFiltrados.map((producto) => (
+                                        <tr key={producto.id} className={!producto.activo ? 'opacity-50' : ''}>
+                                            <td className="px-4 py-3 font-medium text-white">{producto.nombre}</td>
+                                            <td className="px-4 py-3 text-white/60">{producto.categorias?.nombre || 'Sin categoría'}</td>
+                                            <td className="px-4 py-3 text-white/60">{getTipoIcon(producto.tipo)} {producto.tipo}</td>
+                                            <td className="px-4 py-3 font-bold text-golden">{formatPrice(producto.precio_venta)}</td>
+                                            <td className="px-4 py-3 text-white/60">{producto.stock}</td>
                                             <td className="px-4 py-3">
-                                                <span className={`px-2 py-1 rounded-full text-xs ${getEstadoColor(producto.tipo, producto.stock)}`}>
-                                                    {getTipoLabel(producto.tipo)}
+                                                <span className={`px-2 py-1 rounded-full text-xs border ${
+                                                    producto.activo 
+                                                        ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                                                        : 'bg-white/10 text-white/40 border-white/10'
+                                                }`}>
+                                                    {producto.activo ? '✅ Activo' : '⏸️ Inactivo'}
                                                 </span>
-                                            </td>
-                                            <td className="px-4 py-3">{producto.tamanios_pizza?.nombre || '-'}</td>
-                                            <td className="px-4 py-3 text-orange-600 font-medium">{formatPrice(producto.precio_venta)}</td>
-                                            <td className="px-4 py-3">
-                                                {producto.tipo === 'simple' ? (
-                                                    <span className={`px-2 py-1 rounded-full text-xs ${
-                                                        producto.stock <= 0 ? 'bg-red-100 text-red-800' :
-                                                        producto.stock < 10 ? 'bg-yellow-100 text-yellow-800' :
-                                                        'bg-green-100 text-green-800'
-                                                    }`}>
-                                                        {producto.stock}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-xs text-gray-400">N/A</span>
-                                                )}
                                             </td>
                                             <td className="px-4 py-3 space-x-2">
                                                 {producto.activo ? (
                                                     <>
-                                                        <button onClick={() => handleEditar(producto)} className="text-blue-600 hover:text-blue-800 text-sm">
-                                                            Editar
+                                                        <button
+                                                            onClick={() => handleEditar(producto)}
+                                                            className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1"
+                                                        >
+                                                            <Edit2 size={14} /> Editar
                                                         </button>
-                                                        <button onClick={() => handleEliminar(producto.id)} className="text-red-600 hover:text-red-800 text-sm">
-                                                            Desactivar
-                                                        </button>
-                                                        <button onClick={() => handleEliminarPermanente(producto.id)} className="text-red-800 hover:text-red-950 text-sm font-bold">
-                                                            🗑️
+                                                        <button
+                                                            onClick={() => handleEliminar(producto.id)}
+                                                            className="text-red-400 hover:text-red-300 text-sm flex items-center gap-1"
+                                                        >
+                                                            <Trash2 size={14} /> Desactivar
                                                         </button>
                                                     </>
                                                 ) : (
-                                                    <>
-                                                        <button onClick={() => handleReactivar(producto.id)} className="text-green-600 hover:text-green-800 text-sm">
-                                                            Reactivar
-                                                        </button>
-                                                        <button onClick={() => handleEliminarPermanente(producto.id)} className="text-red-800 hover:text-red-950 text-sm font-bold">
-                                                            🗑️
-                                                        </button>
-                                                    </>
+                                                    <button
+                                                        onClick={() => handleReactivar(producto.id)}
+                                                        className="text-green-400 hover:text-green-300 text-sm flex items-center gap-1"
+                                                    >
+                                                        <RefreshCw size={14} /> Reactivar
+                                                    </button>
                                                 )}
                                             </td>
                                         </tr>

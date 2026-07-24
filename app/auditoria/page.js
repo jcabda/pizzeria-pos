@@ -39,18 +39,15 @@ export default function AuditoriaPage() {
 
     const cargarEstadisticasAuditoria = async () => {
         try {
-            // Total de acciones
             const { count: totalAcciones } = await supabase
                 .from('auditoria')
                 .select('*', { count: 'exact', head: true })
 
-            // Usuarios que han hecho acciones
             const { data: usuariosActivos } = await supabase
                 .from('auditoria')
                 .select('usuario_id')
             const uniqueUsuarios = new Set(usuariosActivos?.map(u => u.usuario_id) || [])
             
-            // Acciones de hoy
             const hoy = new Date()
             hoy.setHours(0, 0, 0, 0)
             const { count: accionesHoy } = await supabase
@@ -58,7 +55,6 @@ export default function AuditoriaPage() {
                 .select('*', { count: 'exact', head: true })
                 .gte('fecha', hoy.toISOString())
 
-            // Tipo de acción más común
             const { data: acciones } = await supabase
                 .from('auditoria')
                 .select('accion')
@@ -204,11 +200,15 @@ export default function AuditoriaPage() {
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                {/* Header */}
                 <div className="flex flex-wrap justify-between items-center gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold">📋 Auditoría del Sistema</h2>
-                        <p className="text-sm text-gray-500">Registro completo con análisis avanzado</p>
+                        <h2 className="text-2xl font-bold text-white">
+                            <span className="text-gradient-golden">Golden</span>
+                            <span className="text-white"> on </span>
+                            <span className="text-gradient-fire">Fire</span>
+                            <span className="text-white/60"> - Auditoría</span>
+                        </h2>
+                        <p className="text-sm text-white/40">Registro completo con análisis avanzado</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <button onClick={exportarCSV} className="btn-secondary text-sm flex items-center gap-2">
@@ -219,7 +219,7 @@ export default function AuditoriaPage() {
                         </button>
                         <button
                             onClick={() => setMostrarFiltros(!mostrarFiltros)}
-                            className={`btn-secondary text-sm flex items-center gap-2 ${mostrarFiltros ? 'bg-orange-600 text-white hover:bg-orange-700' : ''}`}
+                            className={`btn-secondary text-sm flex items-center gap-2 ${mostrarFiltros ? 'border-golden text-golden' : ''}`}
                         >
                             <Filter size={16} />
                             {mostrarFiltros ? 'Ocultar filtros' : 'Filtros'}
@@ -230,29 +230,27 @@ export default function AuditoriaPage() {
                     </div>
                 </div>
 
-                {/* Estadísticas de auditoría */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white rounded-xl shadow-sm p-4 border-l-4 border-blue-500">
-                        <p className="text-xs text-gray-400 uppercase tracking-wider">Total Acciones</p>
-                        <p className="text-2xl font-bold text-gray-800">{statsAuditoria.totalAcciones}</p>
+                    <div className="glass rounded-xl p-4 border-l-4 border-blue-500">
+                        <p className="text-xs text-white/40 uppercase tracking-wider">Total Acciones</p>
+                        <p className="text-2xl font-bold text-white">{statsAuditoria.totalAcciones}</p>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm p-4 border-l-4 border-green-500">
-                        <p className="text-xs text-gray-400 uppercase tracking-wider">Usuarios Activos</p>
-                        <p className="text-2xl font-bold text-gray-800">{statsAuditoria.usuariosActivos}</p>
+                    <div className="glass rounded-xl p-4 border-l-4 border-green-500">
+                        <p className="text-xs text-white/40 uppercase tracking-wider">Usuarios Activos</p>
+                        <p className="text-2xl font-bold text-white">{statsAuditoria.usuariosActivos}</p>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm p-4 border-l-4 border-yellow-500">
-                        <p className="text-xs text-gray-400 uppercase tracking-wider">Acciones Hoy</p>
-                        <p className="text-2xl font-bold text-gray-800">{statsAuditoria.accionesHoy}</p>
+                    <div className="glass rounded-xl p-4 border-l-4 border-yellow-500">
+                        <p className="text-xs text-white/40 uppercase tracking-wider">Acciones Hoy</p>
+                        <p className="text-2xl font-bold text-white">{statsAuditoria.accionesHoy}</p>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm p-4 border-l-4 border-purple-500">
-                        <p className="text-xs text-gray-400 uppercase tracking-wider">Acción Más Común</p>
-                        <p className="text-2xl font-bold text-gray-800">{statsAuditoria.tipoAccionMasComun}</p>
+                    <div className="glass rounded-xl p-4 border-l-4 border-purple-500">
+                        <p className="text-xs text-white/40 uppercase tracking-wider">Acción Más Común</p>
+                        <p className="text-2xl font-bold text-white">{statsAuditoria.tipoAccionMasComun}</p>
                     </div>
                 </div>
 
-                {/* Panel de filtros */}
                 {mostrarFiltros && (
-                    <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 animate-fade-in-up">
+                    <div className="glass-golden rounded-xl p-4 border border-golden/30 animate-fade-in-up">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
                                 <label className="input-label text-xs flex items-center gap-1">
@@ -322,80 +320,78 @@ export default function AuditoriaPage() {
                             </div>
                         </div>
 
-                        <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between">
+                        <div className="mt-4 pt-4 border-t border-white/10 flex justify-between">
                             <button
                                 onClick={limpiarFiltros}
-                                className="btn-ghost text-sm flex items-center gap-2 text-red-500 hover:text-red-700"
+                                className="btn-ghost text-sm flex items-center gap-2 text-red-400 hover:text-red-300"
                             >
                                 <X size={16} /> Limpiar filtros
                             </button>
-                            <span className="text-sm text-gray-400">
+                            <span className="text-sm text-white/40">
                                 {logs.length} registros encontrados
                             </span>
                         </div>
                     </div>
                 )}
 
-                {/* Resumen de filtros activos */}
                 {(filtroUsuario || filtroAccion || filtroFechaInicio || filtroFechaFin) && (
                     <div className="flex flex-wrap gap-2 text-sm">
-                        <span className="text-gray-500">Filtros activos:</span>
+                        <span className="text-white/40">Filtros activos:</span>
                         {filtroUsuario && (
-                            <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                            <span className="glass rounded-full px-2 py-1 text-white/60">
                                 Usuario: {usuarios.find(u => u.id === filtroUsuario)?.nombre || filtroUsuario}
                             </span>
                         )}
                         {filtroAccion && (
-                            <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                            <span className="glass rounded-full px-2 py-1 text-white/60">
                                 Acción: {tiposAccion.find(t => t.value === filtroAccion)?.label || filtroAccion}
                             </span>
                         )}
                         {filtroFechaInicio && (
-                            <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                            <span className="glass rounded-full px-2 py-1 text-white/60">
                                 Desde: {new Date(filtroFechaInicio).toLocaleDateString()}
                             </span>
                         )}
                         {filtroFechaFin && (
-                            <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                            <span className="glass rounded-full px-2 py-1 text-white/60">
                                 Hasta: {new Date(filtroFechaFin).toLocaleDateString()}
                             </span>
                         )}
                     </div>
                 )}
 
-                {/* Tabla de resultados */}
                 {cargando ? (
-                    <div className="text-center py-12 text-gray-500">
+                    <div className="text-center py-12 text-white/40">
                         <div className="animate-pulse">
                             <div className="text-4xl mb-4">📋</div>
                             <p>Cargando registros...</p>
                         </div>
                     </div>
                 ) : logs.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
+                    <div className="text-center py-12 text-white/40">
                         <p className="text-4xl mb-4">📭</p>
                         <p className="text-lg font-medium">No hay registros que coincidan</p>
-                        <p className="text-sm text-gray-400">Prueba ajustando los filtros</p>
+                        <p className="text-sm text-white/30">Prueba ajustando los filtros</p>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                    <div className="glass rounded-xl overflow-hidden border border-white/10">
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-gray-50">
+                                <thead className="bg-white/5 border-b border-white/10">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acción</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enlace</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Fecha</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Usuario</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Acción</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Enlace</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-white/5">
                                     {logs.map((log) => {
                                         const pedidoId = extraerPedidoId(log.accion)
                                         return (
-                                            <tr key={log.id} className="hover:bg-gray-50 transition-colors group">
-                                                <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                                            <tr key={log.id} className="hover:bg-white/5 transition-colors group">
+                                                <td className="px-4 py-3 text-sm text-white/60 whitespace-nowrap">
                                                     {new Date(log.fecha).toLocaleString('es-ES', {
                                                         day: '2-digit',
                                                         month: '2-digit',
@@ -407,23 +403,23 @@ export default function AuditoriaPage() {
                                                 <td className="px-4 py-3">
                                                     <span className="flex items-center space-x-2">
                                                         <span className="text-xl">{log.usuarios?.avatar || '👤'}</span>
-                                                        <span className="font-medium text-gray-700">{log.usuarios?.nombre || 'Sistema'}</span>
+                                                        <span className="font-medium text-white">{log.usuarios?.nombre || 'Sistema'}</span>
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <span className="flex items-center gap-2">
+                                                    <span className="flex items-center gap-2 text-white/80">
                                                         <span>{getIconoAccion(log.accion)}</span>
-                                                        <span className="text-gray-700">{log.accion}</span>
+                                                        <span>{log.accion}</span>
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     {pedidoId && (
-                                                        <Link href={`/cocina`} className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
+                                                        <Link href={`/cocina`} className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1">
                                                             🔍 Ver pedido #{pedidoId}
                                                         </Link>
                                                     )}
                                                     {log.accion.includes('Descontó') && (
-                                                        <Link href={`/inventario`} className="text-green-600 hover:text-green-800 text-sm flex items-center gap-1">
+                                                        <Link href={`/inventario`} className="text-green-400 hover:text-green-300 text-sm flex items-center gap-1">
                                                             📦 Ver inventario
                                                         </Link>
                                                     )}
@@ -431,7 +427,7 @@ export default function AuditoriaPage() {
                                                 <td className="px-4 py-3">
                                                     <button
                                                         onClick={() => eliminarLog(log.id)}
-                                                        className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
                                                         title="Eliminar registro"
                                                     >
                                                         <Trash2 size={16} />
@@ -443,9 +439,9 @@ export default function AuditoriaPage() {
                                 </tbody>
                             </table>
                         </div>
-                        <div className="bg-gray-50 px-4 py-2 text-sm text-gray-500 border-t border-gray-100 flex justify-between">
+                        <div className="bg-white/5 px-4 py-2 text-sm text-white/40 border-t border-white/5 flex justify-between">
                             <span>Mostrando {logs.length} registros</span>
-                            <span className="text-xs text-gray-400">Total en BD: {statsAuditoria.totalAcciones}</span>
+                            <span className="text-xs text-white/30">Total en BD: {statsAuditoria.totalAcciones}</span>
                         </div>
                     </div>
                 )}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import DashboardLayout from '@/components/DashboardLayout'
 import { supabase } from '@/lib/supabaseClient'
 import { formatPrice } from '@/lib/currency'
-import { Plus, Edit2, Trash2, Check, X, Ruler, RefreshCw } from 'lucide-react'
+import { Plus, Edit2, Trash2, RefreshCw, Ruler } from 'lucide-react'
 
 export default function TamaniosPage() {
     const [tamanios, setTamanios] = useState([])
@@ -16,7 +16,7 @@ export default function TamaniosPage() {
         porciones: 1,
         factor: 1.0,
         precio_base: 0,
-        max_sabores: 1, // ✅ NUEVO CAMPO
+        max_sabores: 1,
         activo: true
     })
 
@@ -69,7 +69,7 @@ export default function TamaniosPage() {
                         porciones: formData.porciones,
                         factor: formData.factor,
                         precio_base: formData.precio_base,
-                        max_sabores: formData.max_sabores, // ✅ NUEVO
+                        max_sabores: formData.max_sabores,
                         activo: formData.activo
                     })
                     .eq('id', editandoId)
@@ -84,7 +84,7 @@ export default function TamaniosPage() {
                         porciones: formData.porciones,
                         factor: formData.factor,
                         precio_base: formData.precio_base,
-                        max_sabores: formData.max_sabores, // ✅ NUEVO
+                        max_sabores: formData.max_sabores,
                         activo: formData.activo
                     })
 
@@ -107,7 +107,7 @@ export default function TamaniosPage() {
             porciones: tamanio.porciones || 1,
             factor: tamanio.factor || 1.0,
             precio_base: tamanio.precio_base || 0,
-            max_sabores: tamanio.max_sabores || 1, // ✅ NUEVO
+            max_sabores: tamanio.max_sabores || 1,
             activo: tamanio.activo !== false
         })
         setMostrarFormulario(true)
@@ -169,22 +169,21 @@ export default function TamaniosPage() {
     const getEstadoBadge = (activo) => {
         return activo 
             ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-            : 'bg-white/10 text-white-40 border border-white/10'
+            : 'bg-white/10 text-white/40 border border-white/10'
     }
 
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                {/* Header */}
                 <div className="flex flex-wrap justify-between items-center gap-4">
                     <div>
-                        <h2 className="text-2xl font-bold">
+                        <h2 className="text-2xl font-bold text-white">
                             <span className="text-gradient-golden">Golden</span>
                             <span className="text-white"> on </span>
                             <span className="text-gradient-fire">Fire</span>
-                            <span className="text-white-60"> - Tamaños de Pizza</span>
+                            <span className="text-white/60"> - Tamaños</span>
                         </h2>
-                        <p className="text-sm text-white-40">Gestiona los tamaños de pizza disponibles</p>
+                        <p className="text-sm text-white/40">Gestiona los tamaños de pizza</p>
                     </div>
                     <button
                         onClick={() => {
@@ -198,7 +197,6 @@ export default function TamaniosPage() {
                     </button>
                 </div>
 
-                {/* Formulario */}
                 {mostrarFormulario && (
                     <div className="glass-golden rounded-xl p-6 border border-golden/30 animate-fade-in-up">
                         <h3 className="text-lg font-semibold mb-4 text-white">
@@ -230,7 +228,7 @@ export default function TamaniosPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="input-label">Factor (precio base)</label>
+                                    <label className="input-label">Factor</label>
                                     <input
                                         type="number"
                                         step="0.1"
@@ -254,7 +252,6 @@ export default function TamaniosPage() {
                                         required
                                     />
                                 </div>
-                                {/* ✅ NUEVO CAMPO: max_sabores */}
                                 <div>
                                     <label className="input-label">Máximo de Sabores *</label>
                                     <input
@@ -267,8 +264,8 @@ export default function TamaniosPage() {
                                         max="10"
                                         required
                                     />
-                                    <p className="text-xs text-white-40 mt-1">
-                                        Número máximo de sabores que puede tener una pizza de este tamaño
+                                    <p className="text-xs text-white/40 mt-1">
+                                        Número máximo de sabores por pizza
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-4 pt-6">
@@ -279,7 +276,7 @@ export default function TamaniosPage() {
                                             onChange={(e) => setFormData({...formData, activo: e.target.checked})}
                                             className="w-4 h-4 rounded accent-golden"
                                         />
-                                        <span className="text-sm text-white-60">Activo</span>
+                                        <span className="text-sm text-white/60">Activo</span>
                                     </label>
                                 </div>
                             </div>
@@ -296,36 +293,34 @@ export default function TamaniosPage() {
                     </div>
                 )}
 
-                {/* Tabla */}
                 <div className="glass rounded-xl overflow-hidden border border-white/10">
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead className="bg-white/5 border-b border-white/10">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Nombre</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Porciones</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Factor</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Precio Base</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Máx Sabores</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Estado</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Acciones</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Nombre</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Porciones</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Factor</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Precio Base</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Máx Sabores</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Estado</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {cargando ? (
-                                    <tr><td colSpan="7" className="text-center py-8 text-white-40">Cargando...</td></tr>
+                                    <tr><td colSpan="7" className="text-center py-8 text-white/40">Cargando...</td></tr>
                                 ) : tamanios.length === 0 ? (
-                                    <tr><td colSpan="7" className="text-center py-8 text-white-40">No hay tamaños registrados</td></tr>
+                                    <tr><td colSpan="7" className="text-center py-8 text-white/40">No hay tamaños</td></tr>
                                 ) : (
                                     tamanios.map((tamanio) => (
                                         <tr key={tamanio.id} className={!tamanio.activo ? 'opacity-50' : ''}>
                                             <td className="px-4 py-3 font-medium text-white">{tamanio.nombre}</td>
-                                            <td className="px-4 py-3 text-white-60">{tamanio.porciones}</td>
-                                            <td className="px-4 py-3 text-white-60">{tamanio.factor}</td>
+                                            <td className="px-4 py-3 text-white/60">{tamanio.porciones}</td>
+                                            <td className="px-4 py-3 text-white/60">{tamanio.factor}</td>
                                             <td className="px-4 py-3 font-bold text-golden">{formatPrice(tamanio.precio_base)}</td>
-                                            {/* ✅ NUEVA COLUMNA */}
                                             <td className="px-4 py-3">
-                                                <span className="badge badge-golden">
+                                                <span className="badge-sabores">
                                                     {tamanio.max_sabores || 1} sabor(es)
                                                 </span>
                                             </td>
