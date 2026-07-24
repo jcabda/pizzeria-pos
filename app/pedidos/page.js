@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import DashboardLayout from '@/components/DashboardLayout'
 import { supabase } from '@/lib/supabaseClient'
 import { 
@@ -14,14 +14,14 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { 
     ShoppingCart, Trash2, Plus, Minus, Check, Eye, X, CreditCard, 
-    Pizza, Slice, History, ClipboardList, Search, Edit3, Percent, Tag,
+    Pizza, Slice, History, ClipboardList, Search, Edit3, 
     Utensils
 } from 'lucide-react'
 import Multiplicador from '@/components/pedido/Multiplicador'
 import ClienteSelector from '@/components/pedido/ClienteSelector'
 import MeseroSelector from '@/components/pedido/MeseroSelector'
 
-export default function PedidosPage() {
+function PedidosContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const comandaId = searchParams.get('comanda')
@@ -137,7 +137,6 @@ export default function PedidosPage() {
             }
         }
 
-        // Cargar comanda si existe
         if (comandaId) {
             cargarComanda(comandaId)
         }
@@ -451,7 +450,6 @@ export default function PedidosPage() {
             const total = totalCarrito
             const ahora = new Date().toISOString()
             
-            // Si hay comanda, solo agregamos items a la comanda
             if (comandaActual) {
                 for (const item of carrito) {
                     await supabase
@@ -467,7 +465,6 @@ export default function PedidosPage() {
                         })
                 }
 
-                // Actualizar subtotal de la comanda
                 const { data: comandaData } = await supabase
                     .from('comandas')
                     .select('subtotal')
@@ -495,7 +492,6 @@ export default function PedidosPage() {
                 return
             }
 
-            // Si no hay comanda, crear pedido normal
             const { data: pedidoData, error: pedidoError } = await supabase
                 .from('pedidos')
                 .insert({
@@ -744,7 +740,7 @@ export default function PedidosPage() {
     return (
         <DashboardLayout>
             <div className="space-y-4">
-                {/* HEADER CON RESUMEN Y DATOS DE COMANDAS */}
+                {/* HEADER CON RESUMEN */}
                 <div className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 sticky top-16 z-30">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
@@ -810,7 +806,6 @@ export default function PedidosPage() {
                         </div>
                     </div>
 
-                    {/* Selectores de Cliente y Mesero (si hay comanda) */}
                     {comandaActual && (
                         <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -833,7 +828,6 @@ export default function PedidosPage() {
                                     disabled={!!comandaActual}
                                 >
                                     <option value="">Seleccionar mesero</option>
-                                    {/* Aquí se cargan los meseros */}
                                 </select>
                             </div>
                         </div>
@@ -887,7 +881,6 @@ export default function PedidosPage() {
                 {/* CONTENIDO PRINCIPAL */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
-                        {/* BÚSQUEDA DE PRODUCTOS */}
                         <div className="relative">
                             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                             <input
@@ -899,7 +892,6 @@ export default function PedidosPage() {
                             />
                         </div>
 
-                        {/* CATEGORÍAS */}
                         <div className="flex gap-2 overflow-x-auto pb-2 flex-wrap">
                             {categorias.map(cat => (
                                 <button
@@ -920,14 +912,12 @@ export default function PedidosPage() {
                             ))}
                         </div>
 
-                        {/* MULTIPLICADOR GLOBAL */}
                         <div className="bg-white rounded-xl shadow-sm p-3 border border-gray-100 flex items-center justify-between">
                             <span className="text-sm font-medium text-gray-700">🔢 Multiplicador global:</span>
                             <Multiplicador value={multiplicador} onChange={setMultiplicador} min={1} max={10} />
                             <span className="text-xs text-gray-400">Aplica a todos los productos</span>
                         </div>
 
-                        {/* PRODUCTOS */}
                         {cargando ? (
                             <div className="text-center py-8 text-gray-500">Cargando...</div>
                         ) : productosFiltrados.length === 0 ? (
@@ -978,7 +968,6 @@ export default function PedidosPage() {
 
                                                 {isConfiguring && mostrarConfigurador && (
                                                     <div className="mt-4 p-4 bg-gray-50 rounded-xl space-y-4">
-                                                        {/* TOGGLE: Pizza entera / Porciones */}
                                                         <div className="grid grid-cols-2 gap-3">
                                                             <button
                                                                 onClick={() => {
@@ -1026,7 +1015,6 @@ export default function PedidosPage() {
                                                         </div>
 
                                                         {!modoPorcion ? (
-                                                            // PIZZA ENTERA
                                                             <>
                                                                 <div>
                                                                     <p className="font-medium text-sm mb-2">📏 Tamaño:</p>
@@ -1129,7 +1117,6 @@ export default function PedidosPage() {
                                                                 </div>
                                                             </>
                                                         ) : (
-                                                            // PORCIONES MULTISABORES
                                                             <div className="space-y-4">
                                                                 <div>
                                                                     <p className="font-medium text-sm mb-2">📏 Tamaño:</p>
@@ -1500,7 +1487,6 @@ export default function PedidosPage() {
                     </div>
                 </div>
 
-                {/* NAVEGACIÓN CONTEXTUAL */}
                 <div className="flex gap-4 mt-4">
                     <Link href="/cocina" className="btn-secondary text-sm">
                         👨‍🍳 Ver en Cocina
@@ -1511,5 +1497,26 @@ export default function PedidosPage() {
                 </div>
             </div>
         </DashboardLayout>
+    )
+}
+
+// ============================================
+// EXPORTAR CON SUSPENSE
+// ============================================
+
+export default function PedidosPage() {
+    return (
+        <Suspense fallback={
+            <DashboardLayout>
+                <div className="text-center py-12 text-gray-500">
+                    <div className="animate-pulse">
+                        <div className="text-4xl mb-4">🍕</div>
+                        <p>Cargando pedidos...</p>
+                    </div>
+                </div>
+            </DashboardLayout>
+        }>
+            <PedidosContent />
+        </Suspense>
     )
 }
