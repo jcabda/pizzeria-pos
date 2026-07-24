@@ -3,14 +3,19 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '@/components/DashboardLayout'
 import { supabase } from '@/lib/supabaseClient'
-import { Plus, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Edit2, Trash2, RefreshCw, Search, X, Check, Tag } from 'lucide-react'
 
 export default function TiposPage() {
     const [tipos, setTipos] = useState([])
     const [cargando, setCargando] = useState(true)
-    const [nuevoTipo, setNuevoTipo] = useState('')
+    const [mostrarFormulario, setMostrarFormulario] = useState(false)
     const [editandoId, setEditandoId] = useState(null)
-    const [editandoNombre, setEditandoNombre] = useState('')
+    const [busqueda, setBusqueda] = useState('')
+    const [formData, setFormData] = useState({
+        nombre: '',
+        descripcion: '',
+        activo: true
+    })
 
     useEffect(() => {
         cargarTipos()
@@ -20,12 +25,10 @@ export default function TiposPage() {
         setCargando(true)
         try {
             const { data } = await supabase
-                .from('productos_menu')
-                .select('tipo')
-                .not('tipo', 'is', null)
-            
-            const tiposUnicos = [...new Set(data?.map(p => p.tipo) || [])]
-            setTipos(tiposUnicos.map((t, i) => ({ id: i + 1, nombre: t })))
+                .from('tipos')
+                .select('*')
+                .order('nombre')
+            setTipos(data || [])
         } catch (error) {
             console.error('Error cargando tipos:', error)
         } finally {
@@ -33,125 +36,287 @@ export default function TiposPage() {
         }
     }
 
-    const agregarTipo = () => {
-        if (!nuevoTipo.trim()) {
-            alert('Por favor, escribe un nombre para el tipo')
-            return
-        }
-
-        if (tipos.some(t => t.nombre === nuevoTipo.trim())) {
-            alert('❌ Este tipo ya existe')
-            return
-        }
-
-        setTipos([...tipos, { id: Date.now(), nombre: nuevoTipo.trim() }])
-        setNuevoTipo('')
-        alert('✅ Tipo agregado correctamente')
-    }
-
-    const editarTipo = (tipo) => {
-        setEditandoId(tipo.id)
-        setEditandoNombre(tipo.nombre)
-    }
-
-    const guardarEdicion = () => {
-        if (!editandoNombre.trim()) {
-            alert('El nombre no puede estar vacío')
-            return
-        }
-
-        setTipos(tipos.map(t => 
-            t.id === editandoId ? { ...t, nombre: editandoNombre.trim() } : t
-        ))
+    const resetFormulario = () => {
+        setFormData({
+            nombre: '',
+            descripcion: '',
+            activo: true
+        })
         setEditandoId(null)
-        setEditandoNombre('')
-        alert('✅ Tipo actualizado correctamente')
+        setMostrarFormulario(false)
     }
 
-    const eliminarTipo = (id) => {
-        if (!confirm('⚠️ ¿Eliminar este tipo? Esta acción no se puede deshacer.')) return
+    const handleSubmit = async (e) => {
+        e.preventDefault()
         
-        setTipos(tipos.filter(t => t.id !== id))
-        alert('✅ Tipo eliminado correctamente')
+        if (!formData.nombre) {
+            alert('Por favor, completa el nombre del tipo')
+            return
+        }
+
+        try {
+            if (editandoId) {
+                const { error } = await supabase
+                    .from('tipos')
+                    .update({
+                        nombre: formData.nombre,
+                        descripcion: formData.descripcion,
+                        activo: formData.activo
+                    })
+                    .eq('id', editandoId)
+
+                if (error) throw error
+                alert('✅ Tipo actualizado correctamente')
+            } else {
+                const { error } = await supabase
+                    .from('tipos')
+                    .insert({
+                        nombre: formData.nombre,
+                        descripcion: formData.descripcion,
+                        activo: formData.activo
+                    })
+
+                if (error) throw error
+                alert('✅ Tipo creado correctamente')
+            }
+
+            resetFormulario()
+            cargarTipos()
+        } catch (error) {
+            console.error('Error guardando tipo:', error)
+            alert('❌ Error al guardar el tipo: ' + error.message)
+        }
     }
+
+    const handleEditar = (tipo) => {
+        setEditandoId(tipo.id)
+        setFormData({
+            nombre: tipo.nombre,
+            descripcion: tipo.descripcion || '',
+            activo: tipo.activo !== false
+        })
+        setMostrarFormulario(true)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
+    const handleEliminar = async (id) => {
+        if (!confirm('¿Estás seguro de desactivar este tipo?')) return
+
+        try {
+            const { error } = await supabase
+                .from('tipos')
+                .update({ activo: false })
+                .eq('id', id)
+
+            if (error) throw error
+            alert('✅ Tipo desactivado correctamente')
+            cargarTipos()
+        } catch (error) {
+            console.error('Error desactivando tipo:', error)
+            alert('❌ Error al desactivar el tipo')
+        }
+    }
+
+    const handleReactivar = async (id) => {
+        try {
+            const { error } = await supabase
+                .from('tipos')
+                .update({ activo: true })
+                .eq('id', id)
+
+            if (error) throw error
+            alert('✅ Tipo reactivado correctamente')
+            cargarTipos()
+        } catch (error) {
+            console.error('Error reactivando tipo:', error)
+            alert('❌ Error al reactivar el tipo')
+        }
+    }
+
+    const handleEliminarPermanente = async (id) => {
+        if (!confirm('⚠️ ¿Estás seguro de ELIMINAR PERMANENTEMENTE este tipo?')) return
+
+        try {
+            const { error } = await supabase
+                .from('tipos')
+                .delete()
+                .eq('id', id)
+
+            if (error) throw error
+            alert('✅ Tipo eliminado permanentemente')
+            cargarTipos()
+        } catch (error) {
+            console.error('Error eliminando tipo:', error)
+            alert('❌ Error al eliminar el tipo')
+        }
+    }
+
+    const tiposFiltrados = tipos.filter(t => {
+        if (!busqueda) return true
+        return t.nombre?.toLowerCase().includes(busqueda.toLowerCase())
+    })
 
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                <div>
-                    <h2 className="text-2xl font-bold">🏷️ Tipos de Productos</h2>
-                    <p className="text-sm text-gray-500">Administra los tipos de productos disponibles</p>
+                <div className="flex flex-wrap justify-between items-center gap-4">
+                    <div>
+                        <h2 className="text-2xl font-bold text-white">
+                            <span className="text-gradient-golden">Golden</span>
+                            <span className="text-white"> on </span>
+                            <span className="text-gradient-fire">Fire</span>
+                            <span className="text-white/60"> - Tipos</span>
+                        </h2>
+                        <p className="text-sm text-white/40">Gestiona los tipos de productos</p>
+                    </div>
+                    <button
+                        onClick={() => {
+                            resetFormulario()
+                            setMostrarFormulario(!mostrarFormulario)
+                        }}
+                        className="btn-golden text-sm flex items-center gap-2"
+                    >
+                        <Plus size={18} />
+                        {mostrarFormulario ? 'Cancelar' : 'Nuevo Tipo'}
+                    </button>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                    <h3 className="text-lg font-semibold mb-4">➕ Agregar nuevo tipo</h3>
-                    <div className="flex gap-3">
+                {mostrarFormulario && (
+                    <div className="glass-golden rounded-xl p-6 border border-golden/30 animate-fade-in-up">
+                        <h3 className="text-lg font-semibold mb-4 text-white">
+                            {editandoId ? '✏️ Editar Tipo' : '📝 Nuevo Tipo'}
+                        </h3>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="input-label">Nombre *</label>
+                                    <input
+                                        type="text"
+                                        value={formData.nombre}
+                                        onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                                        className="input-field"
+                                        placeholder="Ej: Pizza, Bebida, Postre"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="input-label">Descripción</label>
+                                    <input
+                                        type="text"
+                                        value={formData.descripcion}
+                                        onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+                                        className="input-field"
+                                        placeholder="Descripción del tipo"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.activo}
+                                            onChange={(e) => setFormData({...formData, activo: e.target.checked})}
+                                            className="w-4 h-4 rounded accent-golden"
+                                        />
+                                        <span className="text-sm text-white/60">Activo</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="flex space-x-3 pt-4">
+                                <button type="submit" className="btn-golden">
+                                    {editandoId ? '💾 Actualizar' : '💾 Crear Tipo'}
+                                </button>
+                                <button type="button" onClick={resetFormulario} className="btn-secondary">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+
+                <div className="flex gap-3 items-center">
+                    <div className="relative flex-1">
+                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
                         <input
                             type="text"
-                            value={nuevoTipo}
-                            onChange={(e) => setNuevoTipo(e.target.value)}
-                            className="input-field flex-1"
-                            placeholder="Ej: pizza_especial, bebida_artesanal"
-                            onKeyDown={(e) => e.key === 'Enter' && agregarTipo()}
+                            value={busqueda}
+                            onChange={(e) => setBusqueda(e.target.value)}
+                            className="input-field pl-10"
+                            placeholder="🔍 Buscar tipos..."
                         />
-                        <button onClick={agregarTipo} className="btn-golden">
-                            Agregar
-                        </button>
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">
-                        💡 Los tipos se usan para clasificar productos en el menú
-                    </p>
+                    <button onClick={cargarTipos} className="btn-secondary text-sm flex items-center gap-1">
+                        <RefreshCw size={16} />
+                    </button>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                <div className="glass rounded-xl overflow-hidden border border-white/10">
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-gray-50">
+                            <thead className="bg-white/5 border-b border-white/10">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Nombre</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Descripción</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Estado</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-white/5">
                                 {cargando ? (
-                                    <tr><td colSpan="3" className="text-center py-8 text-gray-500">Cargando...</td></tr>
-                                ) : tipos.length === 0 ? (
-                                    <tr><td colSpan="3" className="text-center py-8 text-gray-500">No hay tipos registrados</td></tr>
+                                    <tr><td colSpan="4" className="text-center py-8 text-white/40">Cargando...</td></tr>
+                                ) : tiposFiltrados.length === 0 ? (
+                                    <tr><td colSpan="4" className="text-center py-8 text-white/40">No hay tipos</td></tr>
                                 ) : (
-                                    tipos.map((tipo, index) => (
-                                        <tr key={tipo.id}>
-                                            <td className="px-4 py-3 text-gray-400">{index + 1}</td>
-                                            <td className="px-4 py-3 font-medium">
-                                                {editandoId === tipo.id ? (
-                                                    <input
-                                                        type="text"
-                                                        value={editandoNombre}
-                                                        onChange={(e) => setEditandoNombre(e.target.value)}
-                                                        className="input-field text-sm py-1 px-2 w-48"
-                                                        onKeyDown={(e) => e.key === 'Enter' && guardarEdicion()}
-                                                    />
-                                                ) : (
-                                                    tipo.nombre
-                                                )}
+                                    tiposFiltrados.map((tipo) => (
+                                        <tr key={tipo.id} className={!tipo.activo ? 'opacity-50' : ''}>
+                                            <td className="px-4 py-3 font-medium text-white">{tipo.nombre}</td>
+                                            <td className="px-4 py-3 text-white/60">{tipo.descripcion || 'Sin descripción'}</td>
+                                            <td className="px-4 py-3">
+                                                <span className={`px-2 py-1 rounded-full text-xs border ${
+                                                    tipo.activo 
+                                                        ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                                                        : 'bg-white/10 text-white/40 border-white/10'
+                                                }`}>
+                                                    {tipo.activo ? '✅ Activo' : '⏸️ Inactivo'}
+                                                </span>
                                             </td>
                                             <td className="px-4 py-3 space-x-2">
-                                                {editandoId === tipo.id ? (
+                                                {tipo.activo ? (
                                                     <>
-                                                        <button onClick={guardarEdicion} className="text-green-600 hover:text-green-800 text-sm">
-                                                            💾 Guardar
+                                                        <button
+                                                            onClick={() => handleEditar(tipo)}
+                                                            className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1"
+                                                        >
+                                                            <Edit2 size={14} /> Editar
                                                         </button>
-                                                        <button onClick={() => setEditandoId(null)} className="text-gray-600 hover:text-gray-800 text-sm">
-                                                            Cancelar
+                                                        <button
+                                                            onClick={() => handleEliminar(tipo.id)}
+                                                            className="text-red-400 hover:text-red-300 text-sm flex items-center gap-1"
+                                                        >
+                                                            <Trash2 size={14} /> Desactivar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEliminarPermanente(tipo.id)}
+                                                            className="text-red-600 hover:text-red-500 text-sm font-bold"
+                                                            title="Eliminar permanentemente"
+                                                        >
+                                                            🗑️
                                                         </button>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <button onClick={() => editarTipo(tipo)} className="text-blue-600 hover:text-blue-800 text-sm">
-                                                            Editar
+                                                        <button
+                                                            onClick={() => handleReactivar(tipo.id)}
+                                                            className="text-green-400 hover:text-green-300 text-sm flex items-center gap-1"
+                                                        >
+                                                            <RefreshCw size={14} /> Reactivar
                                                         </button>
-                                                        <button onClick={() => eliminarTipo(tipo.id)} className="text-red-600 hover:text-red-800 text-sm">
-                                                            Eliminar
+                                                        <button
+                                                            onClick={() => handleEliminarPermanente(tipo.id)}
+                                                            className="text-red-600 hover:text-red-500 text-sm font-bold"
+                                                            title="Eliminar permanentemente"
+                                                        >
+                                                            🗑️
                                                         </button>
                                                     </>
                                                 )}

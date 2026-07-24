@@ -1,316 +1,393 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import DashboardLayout from '@/components/DashboardLayout'
 import { supabase } from '@/lib/supabaseClient'
-import { Plus, Edit2, Trash2, RefreshCw, Search, Scale } from 'lucide-react'
+import { 
+    Shield, Pizza, Package, FolderOpen, Users, 
+    FileText, Ruler, Tag, Scale, Utensils, ChefHat,
+    LayoutDashboard, Settings, Plus, Edit2, Trash2,
+    RefreshCw, Search, X, Check, ArrowRight, 
+    TrendingUp, Clock, Calendar, DollarSign,
+    Home, ClipboardList, BarChart3
+} from 'lucide-react'
+import Link from 'next/link'
 
-export default function UnidadesPage() {
-    const [unidades, setUnidades] = useState([])
+export default function AdminPage() {
+    const router = useRouter()
+    const pathname = usePathname()
+    const [usuario, setUsuario] = useState(null)
     const [cargando, setCargando] = useState(true)
-    const [mostrarFormulario, setMostrarFormulario] = useState(false)
-    const [editandoId, setEditandoId] = useState(null)
-    const [busqueda, setBusqueda] = useState('')
-    const [formData, setFormData] = useState({
-        nombre: '',
-        abreviatura: '',
-        descripcion: '',
-        activo: true
+    const [error, setError] = useState(null)
+    const [stats, setStats] = useState({
+        totalProductos: 0,
+        totalUsuarios: 0,
+        totalCategorias: 0,
+        totalPedidos: 0,
+        totalVentas: 0,
+        mesasActivas: 0
     })
 
     useEffect(() => {
-        cargarUnidades()
-    }, [])
-
-    const cargarUnidades = async () => {
-        setCargando(true)
-        try {
-            const { data } = await supabase
-                .from('unidades')
-                .select('*')
-                .order('nombre')
-            setUnidades(data || [])
-        } catch (error) {
-            console.error('Error cargando unidades:', error)
-        } finally {
-            setCargando(false)
-        }
-    }
-
-    const resetFormulario = () => {
-        setFormData({
-            nombre: '',
-            abreviatura: '',
-            descripcion: '',
-            activo: true
-        })
-        setEditandoId(null)
-        setMostrarFormulario(false)
-    }
-
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        
-        if (!formData.nombre || !formData.abreviatura) {
-            alert('Por favor, completa el nombre y la abreviatura')
+        const userData = localStorage.getItem('usuario')
+        if (!userData) {
+            router.push('/login')
             return
         }
+        
+        const usuario = JSON.parse(userData)
+        if (usuario.rol !== 'admin') {
+            router.push('/dashboard')
+            return
+        }
+        
+        setUsuario(usuario)
+        cargarEstadisticas()
+        setCargando(false)
+    }, [router])
 
+    const cargarEstadisticas = async () => {
         try {
-            if (editandoId) {
-                const { error } = await supabase
-                    .from('unidades')
-                    .update({
-                        nombre: formData.nombre,
-                        abreviatura: formData.abreviatura,
-                        descripcion: formData.descripcion,
-                        activo: formData.activo
-                    })
-                    .eq('id', editandoId)
+            // Total productos
+            const { count: totalProductos } = await supabase
+                .from('productos_menu')
+                .select('*', { count: 'exact', head: true })
+                .eq('activo', true)
 
-                if (error) throw error
-                alert('✅ Unidad actualizada correctamente')
-            } else {
-                const { error } = await supabase
-                    .from('unidades')
-                    .insert({
-                        nombre: formData.nombre,
-                        abreviatura: formData.abreviatura,
-                        descripcion: formData.descripcion,
-                        activo: formData.activo
-                    })
+            // Total usuarios
+            const { count: totalUsuarios } = await supabase
+                .from('usuarios')
+                .select('*', { count: 'exact', head: true })
+                .eq('activo', true)
 
-                if (error) throw error
-                alert('✅ Unidad creada correctamente')
-            }
+            // Total categorías
+            const { count: totalCategorias } = await supabase
+                .from('categorias')
+                .select('*', { count: 'exact', head: true })
+                .eq('activo', true)
 
-            resetFormulario()
-            cargarUnidades()
+            // Total pedidos
+            const { count: totalPedidos } = await supabase
+                .from('pedidos')
+                .select('*', { count: 'exact', head: true })
+
+            // Total ventas
+            const { data: ventasData } = await supabase
+                .from('pedidos')
+                .select('total')
+                .neq('estado', 'cancelado')
+
+            const totalVentas = ventasData?.reduce((sum, p) => sum + (p.total || 0), 0) || 0
+
+            // Mesas activas
+            const { count: mesasActivas } = await supabase
+                .from('mesas')
+                .select('*', { count: 'exact', head: true })
+                .eq('activo', true)
+
+            setStats({
+                totalProductos: totalProductos || 0,
+                totalUsuarios: totalUsuarios || 0,
+                totalCategorias: totalCategorias || 0,
+                totalPedidos: totalPedidos || 0,
+                totalVentas: totalVentas,
+                mesasActivas: mesasActivas || 0
+            })
+
         } catch (error) {
-            console.error('Error guardando unidad:', error)
-            alert('❌ Error al guardar la unidad: ' + error.message)
+            console.error('Error cargando estadísticas:', error)
         }
     }
 
-    const handleEditar = (unidad) => {
-        setEditandoId(unidad.id)
-        setFormData({
-            nombre: unidad.nombre,
-            abreviatura: unidad.abreviatura || '',
-            descripcion: unidad.descripcion || '',
-            activo: unidad.activo !== false
-        })
-        setMostrarFormulario(true)
-        window.scrollTo({ top: 0, behavior: 'smooth' })
+    const adminModules = [
+        { 
+            href: '/productos', 
+            icon: Pizza, 
+            label: 'Productos', 
+            desc: 'Gestionar productos del menú',
+            color: 'text-orange-400',
+            border: 'border-orange-500/30',
+            bg: 'bg-orange-500/10',
+            iconBg: 'bg-orange-500/20',
+            count: stats.totalProductos
+        },
+        { 
+            href: '/inventario', 
+            icon: Package, 
+            label: 'Inventario', 
+            desc: 'Control de ingredientes y stock',
+            color: 'text-blue-400',
+            border: 'border-blue-500/30',
+            bg: 'bg-blue-500/10',
+            iconBg: 'bg-blue-500/20',
+            count: null
+        },
+        { 
+            href: '/categorias', 
+            icon: FolderOpen, 
+            label: 'Categorías', 
+            desc: 'Gestionar categorías de productos',
+            color: 'text-purple-400',
+            border: 'border-purple-500/30',
+            bg: 'bg-purple-500/10',
+            iconBg: 'bg-purple-500/20',
+            count: stats.totalCategorias
+        },
+        { 
+            href: '/usuarios', 
+            icon: Users, 
+            label: 'Usuarios', 
+            desc: 'Gestionar empleados y permisos',
+            color: 'text-green-400',
+            border: 'border-green-500/30',
+            bg: 'bg-green-500/10',
+            iconBg: 'bg-green-500/20',
+            count: stats.totalUsuarios
+        },
+        { 
+            href: '/auditoria', 
+            icon: FileText, 
+            label: 'Auditoría', 
+            desc: 'Ver historial de acciones del sistema',
+            color: 'text-red-400',
+            border: 'border-red-500/30',
+            bg: 'bg-red-500/10',
+            iconBg: 'bg-red-500/20',
+            count: null
+        },
+        { 
+            href: '/mesas', 
+            icon: Utensils, 
+            label: 'Mesas', 
+            desc: 'Gestionar mesas del restaurante',
+            color: 'text-yellow-400',
+            border: 'border-yellow-500/30',
+            bg: 'bg-yellow-500/10',
+            iconBg: 'bg-yellow-500/20',
+            count: stats.mesasActivas
+        },
+        { 
+            href: '/admin/tamanios', 
+            icon: Ruler, 
+            label: 'Tamaños', 
+            desc: 'Modificar tamaños de pizza (max_sabores)',
+            color: 'text-indigo-400',
+            border: 'border-indigo-500/30',
+            bg: 'bg-indigo-500/10',
+            iconBg: 'bg-indigo-500/20',
+            count: null
+        },
+        { 
+            href: '/admin/tipos', 
+            icon: Tag, 
+            label: 'Tipos', 
+            desc: 'Gestionar tipos de productos',
+            color: 'text-pink-400',
+            border: 'border-pink-500/30',
+            bg: 'bg-pink-500/10',
+            iconBg: 'bg-pink-500/20',
+            count: null
+        },
+        { 
+            href: '/admin/unidades', 
+            icon: Scale, 
+            label: 'Unidades', 
+            desc: 'Gestionar unidades de medida',
+            color: 'text-teal-400',
+            border: 'border-teal-500/30',
+            bg: 'bg-teal-500/10',
+            iconBg: 'bg-teal-500/20',
+            count: null
+        },
+        { 
+            href: '/cocina', 
+            icon: ChefHat, 
+            label: 'Cocina', 
+            desc: 'Panel de cocina (con permisos)',
+            color: 'text-amber-400',
+            border: 'border-amber-500/30',
+            bg: 'bg-amber-500/10',
+            iconBg: 'bg-amber-500/20',
+            count: null
+        },
+        { 
+            href: '/dashboard', 
+            icon: LayoutDashboard, 
+            label: 'Dashboard', 
+            desc: 'Volver al panel de control',
+            color: 'text-gray-400',
+            border: 'border-gray-500/30',
+            bg: 'bg-gray-500/10',
+            iconBg: 'bg-gray-500/20',
+            count: null
+        },
+        { 
+            href: '/estadisticas', 
+            icon: BarChart3, 
+            label: 'Estadísticas', 
+            desc: 'Ver reportes y análisis de ventas',
+            color: 'text-cyan-400',
+            border: 'border-cyan-500/30',
+            bg: 'bg-cyan-500/10',
+            iconBg: 'bg-cyan-500/20',
+            count: null
+        },
+    ]
+
+    if (cargando) {
+        return (
+            <DashboardLayout>
+                <div className="text-center py-12 text-white/40">
+                    <div className="animate-pulse">
+                        <div className="text-4xl mb-4">🛡️</div>
+                        <p>Verificando permisos...</p>
+                    </div>
+                </div>
+            </DashboardLayout>
+        )
     }
 
-    const handleEliminar = async (id) => {
-        if (!confirm('¿Estás seguro de desactivar esta unidad?')) return
-
-        try {
-            const { error } = await supabase
-                .from('unidades')
-                .update({ activo: false })
-                .eq('id', id)
-
-            if (error) throw error
-            alert('✅ Unidad desactivada correctamente')
-            cargarUnidades()
-        } catch (error) {
-            console.error('Error desactivando unidad:', error)
-            alert('❌ Error al desactivar la unidad')
-        }
+    if (error) {
+        return (
+            <DashboardLayout>
+                <div className="text-center py-12">
+                    <div className="text-4xl mb-4">❌</div>
+                    <p className="text-red-400">{error}</p>
+                </div>
+            </DashboardLayout>
+        )
     }
-
-    const handleReactivar = async (id) => {
-        try {
-            const { error } = await supabase
-                .from('unidades')
-                .update({ activo: true })
-                .eq('id', id)
-
-            if (error) throw error
-            alert('✅ Unidad reactivada correctamente')
-            cargarUnidades()
-        } catch (error) {
-            console.error('Error reactivando unidad:', error)
-            alert('❌ Error al reactivar la unidad')
-        }
-    }
-
-    const unidadesFiltradas = unidades.filter(u => {
-        if (!busqueda) return true
-        return u.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-               u.abreviatura?.toLowerCase().includes(busqueda.toLowerCase())
-    })
 
     return (
         <DashboardLayout>
             <div className="space-y-6">
+                {/* Header */}
                 <div className="flex flex-wrap justify-between items-center gap-4">
-                    <div>
-                        <h2 className="text-2xl font-bold text-white">
-                            <span className="text-gradient-golden">Golden</span>
-                            <span className="text-white"> on </span>
-                            <span className="text-gradient-fire">Fire</span>
-                            <span className="text-white/60"> - Unidades</span>
-                        </h2>
-                        <p className="text-sm text-white/40">Gestiona las unidades de medida</p>
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-xl bg-golden/10 border border-golden/20">
+                            <Shield size={32} className="text-golden" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold">
+                                <span className="text-gradient-golden">Golden</span>
+                                <span className="text-white"> on </span>
+                                <span className="text-gradient-fire">Fire</span>
+                                <span className="text-white/60"> - Admin Tools</span>
+                            </h2>
+                            <p className="text-sm text-white/40">
+                                {usuario ? `👋 Bienvenido, ${usuario.nombre} (${usuario.rol})` : 'Panel de administración'}
+                            </p>
+                        </div>
                     </div>
-                    <button
-                        onClick={() => {
-                            resetFormulario()
-                            setMostrarFormulario(!mostrarFormulario)
-                        }}
-                        className="btn-golden text-sm flex items-center gap-2"
-                    >
-                        <Plus size={18} />
-                        {mostrarFormulario ? 'Cancelar' : 'Nueva Unidad'}
-                    </button>
+                    <div className="flex gap-2 flex-wrap">
+                        <button 
+                            onClick={() => window.location.reload()} 
+                            className="btn-secondary text-sm flex items-center gap-1"
+                        >
+                            <RefreshCw size={16} /> Actualizar
+                        </button>
+                        <Link 
+                            href="/dashboard" 
+                            className="btn-secondary text-sm flex items-center gap-1"
+                        >
+                            <Home size={16} /> Dashboard
+                        </Link>
+                    </div>
                 </div>
 
-                {mostrarFormulario && (
-                    <div className="glass-golden rounded-xl p-6 border border-golden/30 animate-fade-in-up">
-                        <h3 className="text-lg font-semibold mb-4 text-white">
-                            {editandoId ? '✏️ Editar Unidad' : '📝 Nueva Unidad'}
-                        </h3>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="input-label">Nombre *</label>
-                                    <input
-                                        type="text"
-                                        value={formData.nombre}
-                                        onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                                        className="input-field"
-                                        placeholder="Ej: Kilogramo, Litro, Unidad"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="input-label">Abreviatura *</label>
-                                    <input
-                                        type="text"
-                                        value={formData.abreviatura}
-                                        onChange={(e) => setFormData({...formData, abreviatura: e.target.value.toUpperCase()})}
-                                        className="input-field"
-                                        placeholder="Ej: kg, L, und"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="input-label">Descripción</label>
-                                    <input
-                                        type="text"
-                                        value={formData.descripcion}
-                                        onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
-                                        className="input-field"
-                                        placeholder="Descripción de la unidad"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.activo}
-                                            onChange={(e) => setFormData({...formData, activo: e.target.checked})}
-                                            className="w-4 h-4 rounded accent-golden"
-                                        />
-                                        <span className="text-sm text-white/60">Activo</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div className="flex space-x-3 pt-4">
-                                <button type="submit" className="btn-golden">
-                                    {editandoId ? '💾 Actualizar' : '💾 Crear Unidad'}
-                                </button>
-                                <button type="button" onClick={resetFormulario} className="btn-secondary">
-                                    Cancelar
-                                </button>
-                            </div>
-                        </form>
+                {/* Stats rápidos */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <div className="glass rounded-xl p-3 text-center border border-white/10">
+                        <p className="text-xs text-white/40 uppercase tracking-wider">Productos</p>
+                        <p className="text-xl font-bold text-orange-400">{stats.totalProductos}</p>
                     </div>
-                )}
-
-                <div className="flex gap-3 items-center">
-                    <div className="relative flex-1">
-                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                        <input
-                            type="text"
-                            value={busqueda}
-                            onChange={(e) => setBusqueda(e.target.value)}
-                            className="input-field pl-10"
-                            placeholder="🔍 Buscar unidades..."
-                        />
+                    <div className="glass rounded-xl p-3 text-center border border-white/10">
+                        <p className="text-xs text-white/40 uppercase tracking-wider">Usuarios</p>
+                        <p className="text-xl font-bold text-green-400">{stats.totalUsuarios}</p>
                     </div>
-                    <button onClick={cargarUnidades} className="btn-secondary text-sm">
-                        <RefreshCw size={16} />
-                    </button>
+                    <div className="glass rounded-xl p-3 text-center border border-white/10">
+                        <p className="text-xs text-white/40 uppercase tracking-wider">Categorías</p>
+                        <p className="text-xl font-bold text-purple-400">{stats.totalCategorias}</p>
+                    </div>
+                    <div className="glass rounded-xl p-3 text-center border border-white/10">
+                        <p className="text-xs text-white/40 uppercase tracking-wider">Pedidos</p>
+                        <p className="text-xl font-bold text-blue-400">{stats.totalPedidos}</p>
+                    </div>
+                    <div className="glass rounded-xl p-3 text-center border border-white/10">
+                        <p className="text-xs text-white/40 uppercase tracking-wider">Ventas</p>
+                        <p className="text-xl font-bold text-golden">${stats.totalVentas.toLocaleString()}</p>
+                    </div>
+                    <div className="glass rounded-xl p-3 text-center border border-white/10">
+                        <p className="text-xs text-white/40 uppercase tracking-wider">Mesas</p>
+                        <p className="text-xl font-bold text-yellow-400">{stats.mesasActivas}</p>
+                    </div>
                 </div>
 
-                <div className="glass rounded-xl overflow-hidden border border-white/10">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-white/5 border-b border-white/10">
-                                <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Nombre</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Abreviatura</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Descripción</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Estado</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                                {cargando ? (
-                                    <tr><td colSpan="5" className="text-center py-8 text-white/40">Cargando...</td></tr>
-                                ) : unidadesFiltradas.length === 0 ? (
-                                    <tr><td colSpan="5" className="text-center py-8 text-white/40">No hay unidades</td></tr>
-                                ) : (
-                                    unidadesFiltradas.map((unidad) => (
-                                        <tr key={unidad.id} className={!unidad.activo ? 'opacity-50' : ''}>
-                                            <td className="px-4 py-3 font-medium text-white">{unidad.nombre}</td>
-                                            <td className="px-4 py-3 text-white/60 font-mono">{unidad.abreviatura}</td>
-                                            <td className="px-4 py-3 text-white/60">{unidad.descripcion || 'Sin descripción'}</td>
-                                            <td className="px-4 py-3">
-                                                <span className={`px-2 py-1 rounded-full text-xs border ${
-                                                    unidad.activo 
-                                                        ? 'bg-green-500/20 text-green-400 border-green-500/30' 
-                                                        : 'bg-white/10 text-white/40 border-white/10'
-                                                }`}>
-                                                    {unidad.activo ? '✅ Activo' : '⏸️ Inactivo'}
+                {/* Panel de control rápido */}
+                <div className="glass-golden rounded-xl p-4 border border-golden/20 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <Settings size={18} className="text-golden" />
+                        <p className="text-sm text-white/60">
+                            <span className="text-golden font-medium">Panel de control:</span> 
+                            {adminModules.length} módulos disponibles
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-white/30">
+                        <span>🛡️ Admin v2.0</span>
+                        <span>|</span>
+                        <span className="text-golden/50">Golden on Fire 🔥</span>
+                    </div>
+                </div>
+
+                {/* Grid de módulos */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {adminModules.map((mod) => {
+                        const Icon = mod.icon
+                        return (
+                            <Link
+                                key={mod.href}
+                                href={mod.href}
+                                className={`glass rounded-xl p-5 border ${mod.border} hover:border-golden/40 hover:shadow-golden transition-all group hover:-translate-y-1`}
+                            >
+                                <div className="flex items-start gap-4">
+                                    <div className={`p-3 rounded-xl border ${mod.iconBg} ${mod.border}`}>
+                                        <Icon size={22} className={mod.color} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="font-semibold text-white text-sm truncate">{mod.label}</h3>
+                                            {mod.count !== null && mod.count > 0 && (
+                                                <span className="text-xs text-golden bg-golden/10 px-2 py-0.5 rounded-full">
+                                                    {mod.count}
                                                 </span>
-                                            </td>
-                                            <td className="px-4 py-3 space-x-2">
-                                                {unidad.activo ? (
-                                                    <>
-                                                        <button
-                                                            onClick={() => handleEditar(unidad)}
-                                                            className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1"
-                                                        >
-                                                            <Edit2 size={14} /> Editar
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleEliminar(unidad.id)}
-                                                            className="text-red-400 hover:text-red-300 text-sm flex items-center gap-1"
-                                                        >
-                                                            <Trash2 size={14} /> Desactivar
-                                                        </button>
-                                                    </>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handleReactivar(unidad.id)}
-                                                        className="text-green-400 hover:text-green-300 text-sm flex items-center gap-1"
-                                                    >
-                                                        <RefreshCw size={14} /> Reactivar
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-white/40 mt-0.5 line-clamp-2">{mod.desc}</p>
+                                        <span className="text-xs text-golden opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 mt-1">
+                                            Gestionar <ArrowRight size={12} />
+                                        </span>
+                                    </div>
+                                </div>
+                            </Link>
+                        )
+                    })}
+                </div>
+
+                {/* Footer informativo */}
+                <div className="glass-golden rounded-xl p-4 border border-golden/20 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <Shield size={18} className="text-golden" />
+                        <p className="text-sm text-golden/80">
+                            Estas herramientas solo están disponibles para administradores
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-white/30">
+                        <span>🛡️ Admin Tools v2.0</span>
+                        <span>|</span>
+                        <span>{adminModules.length} módulos</span>
+                        <span>|</span>
+                        <span className="text-golden/50">Golden on Fire 🔥</span>
                     </div>
                 </div>
             </div>

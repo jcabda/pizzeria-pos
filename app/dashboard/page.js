@@ -1,72 +1,101 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import DashboardLayout from '@/components/DashboardLayout'
 import { supabase } from '@/lib/supabaseClient'
-import Link from 'next/link'
 import { formatPrice } from '@/lib/currency'
+import { RefreshCw } from 'lucide-react'
+import { 
+    LayoutDashboard, Users, Pizza, Package, 
+    TrendingUp, TrendingDown, Clock, DollarSign,
+    ShoppingBag, ChefHat, Utensils, Calendar,
+    ArrowUp, ArrowDown, Flame, Sparkles
+} from 'lucide-react'
 
 export default function DashboardPage() {
+    const [cargando, setCargando] = useState(true)
+    const [usuario, setUsuario] = useState(null)
     const [stats, setStats] = useState({
         totalPedidos: 0,
-        totalProductos: 0,
-        pedidosPendientes: 0,
         totalVentas: 0,
         pedidosHoy: 0,
-        ingredientesCriticos: 0
+        ventasHoy: 0,
+        mesasOcupadas: 0,
+        mesasTotales: 0,
+        pedidosPendientes: 0,
+        productosPopulares: []
     })
-    const [cargando, setCargando] = useState(true)
 
     useEffect(() => {
-        cargarDatos()
+        const userData = localStorage.getItem('usuario')
+        if (userData) {
+            setUsuario(JSON.parse(userData))
+        }
+        cargarDashboard()
     }, [])
 
-    const cargarDatos = async () => {
+    const cargarDashboard = async () => {
+        setCargando(true)
         try {
-            const hoy = new Date()
-            hoy.setHours(0, 0, 0, 0)
-
+            // Total pedidos
             const { count: totalPedidos } = await supabase
                 .from('pedidos')
                 .select('*', { count: 'exact', head: true })
 
-            const { count: totalProductos } = await supabase
-                .from('productos_menu')
-                .select('*', { count: 'exact', head: true })
-                .eq('activo', true)
-
-            const { count: pedidosPendientes } = await supabase
-                .from('pedidos')
-                .select('*', { count: 'exact', head: true })
-                .eq('estado', 'pendiente')
-
-            const { data: ventas } = await supabase
+            // Total ventas
+            const { data: ventasData } = await supabase
                 .from('pedidos')
                 .select('total')
                 .neq('estado', 'cancelado')
 
-            const { count: pedidosHoy } = await supabase
+            const totalVentas = ventasData?.reduce((sum, p) => sum + (p.total || 0), 0) || 0
+
+            // Pedidos hoy
+            const hoy = new Date()
+            hoy.setHours(0, 0, 0, 0)
+            const { data: pedidosHoy } = await supabase
                 .from('pedidos')
-                .select('*', { count: 'exact', head: true })
+                .select('total')
+                .neq('estado', 'cancelado')
                 .gte('fecha', hoy.toISOString())
 
-            const { count: ingredientesCriticos } = await supabase
-                .from('ingredientes')
-                .select('*', { count: 'exact', head: true })
-                .lt('stock_actual', 'stock_minimo')
+            const ventasHoy = pedidosHoy?.reduce((sum, p) => sum + (p.total || 0), 0) || 0
 
-            const totalVentas = ventas?.reduce((sum, p) => sum + (p.total || 0), 0) || 0
+            // Mesas
+            const { data: mesasData } = await supabase
+                .from('mesas')
+                .select('estado')
+                .eq('activo', true)
+
+            const mesasOcupadas = mesasData?.filter(m => m.estado === 'ocupada').length || 0
+            const mesasTotales = mesasData?.length || 0
+
+            // Pedidos pendientes
+            const { count: pedidosPendientes } = await supabase
+                .from('pedidos')
+                .select('*', { count: 'exact', head: true })
+                .in('estado', ['pendiente', 'preparando'])
+
+            // Productos más populares
+            const { data: populares } = await supabase
+                .from('pedido_detalles')
+                .select('nombre_producto, cantidad')
+                .order('cantidad', { ascending: false })
+                .limit(5)
 
             setStats({
                 totalPedidos: totalPedidos || 0,
-                totalProductos: totalProductos || 0,
-                pedidosPendientes: pedidosPendientes || 0,
                 totalVentas: totalVentas,
-                pedidosHoy: pedidosHoy || 0,
-                ingredientesCriticos: ingredientesCriticos || 0
+                pedidosHoy: pedidosHoy?.length || 0,
+                ventasHoy: ventasHoy,
+                mesasOcupadas: mesasOcupadas,
+                mesasTotales: mesasTotales,
+                pedidosPendientes: pedidosPendientes || 0,
+                productosPopulares: populares || []
             })
+
         } catch (error) {
-            console.error('Error cargando datos:', error)
+            console.error('Error cargando dashboard:', error)
         } finally {
             setCargando(false)
         }
@@ -75,118 +104,78 @@ export default function DashboardPage() {
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                {/* Título con marca */}
-                <div className="flex items-center gap-3">
-                    <span className="text-3xl animate-fire-pulse">🔥</span>
+                {/* Header */}
+                <div className="flex flex-wrap justify-between items-center gap-4">
                     <div>
                         <h2 className="text-2xl font-bold">
-                            <span className="text-golden">Golden</span>
-                            <span className="text-fire"> on </span>
-                            <span className="text-fire-orange">Fire</span>
-                            <span className="text-gray-800"> - Panel de Control</span>
+                            <span className="text-gradient-golden">Golden</span>
+                            <span className="text-white"> on </span>
+                            <span className="text-gradient-fire">Fire</span>
+                            <span className="text-white/60"> - Dashboard</span>
                         </h2>
-                        <p className="text-sm text-gray-500">🔥 Bienvenido al sistema de gestión</p>
+                        <p className="text-sm text-white/40">
+                            {usuario ? `👋 Bienvenido, ${usuario.nombre}` : 'Panel de control'}
+                        </p>
                     </div>
+                    <button onClick={cargarDashboard} className="btn-secondary text-sm flex items-center gap-2">
+                        <RefreshCw size={16} /> Actualizar
+                    </button>
                 </div>
 
                 {cargando ? (
-                    <div className="text-center py-12 text-gray-400">Cargando estadísticas...</div>
+                    <div className="text-center py-12 text-white/40">
+                        <div className="animate-pulse">
+                            <div className="text-4xl mb-4">📊</div>
+                            <p>Cargando dashboard...</p>
+                        </div>
+                    </div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                            <Link href="/pedidos" className="block group">
-                                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 group-hover:border-golden group-hover:shadow-md transition-all">
-                                    <div className="flex items-center gap-3 sm:gap-4">
-                                        <div className="bg-blue-100 rounded-xl p-2.5 sm:p-3 text-2xl sm:text-3xl">📋</div>
-                                        <div className="min-w-0">
-                                            <p className="text-xs sm:text-sm text-gray-500 truncate">Total Pedidos</p>
-                                            <p className="text-lg sm:text-2xl font-bold text-gray-800">{stats.totalPedidos}</p>
-                                            <p className="text-[10px] sm:text-xs text-golden group-hover:underline truncate">Ver pedidos →</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-
-                            <Link href="/cocina" className="block group">
-                                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 group-hover:border-fire group-hover:shadow-md transition-all">
-                                    <div className="flex items-center gap-3 sm:gap-4">
-                                        <div className="bg-yellow-100 rounded-xl p-2.5 sm:p-3 text-2xl sm:text-3xl">⏳</div>
-                                        <div className="min-w-0">
-                                            <p className="text-xs sm:text-sm text-gray-500 truncate">Pendientes</p>
-                                            <p className="text-lg sm:text-2xl font-bold text-gray-800">{stats.pedidosPendientes}</p>
-                                            <p className="text-[10px] sm:text-xs text-fire group-hover:underline truncate">Ver en cocina →</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-
-                            <Link href="/inventario" className="block group">
-                                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 group-hover:border-golden group-hover:shadow-md transition-all">
-                                    <div className="flex items-center gap-3 sm:gap-4">
-                                        <div className="bg-red-100 rounded-xl p-2.5 sm:p-3 text-2xl sm:text-3xl">⚠️</div>
-                                        <div className="min-w-0">
-                                            <p className="text-xs sm:text-sm text-gray-500 truncate">Stock Crítico</p>
-                                            <p className="text-lg sm:text-2xl font-bold text-gray-800">{stats.ingredientesCriticos}</p>
-                                            <p className="text-[10px] sm:text-xs text-golden group-hover:underline truncate">Ver inventario →</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-
-                            <Link href="/auditoria" className="block group">
-                                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 group-hover:border-golden group-hover:shadow-md transition-all">
-                                    <div className="flex items-center gap-3 sm:gap-4">
-                                        <div className="bg-green-100 rounded-xl p-2.5 sm:p-3 text-2xl sm:text-3xl">💰</div>
-                                        <div className="min-w-0">
-                                            <p className="text-xs sm:text-sm text-gray-500 truncate">Ventas Totales</p>
-                                            <p className="text-lg sm:text-2xl font-bold text-gray-800">{formatPrice(stats.totalVentas)}</p>
-                                            <p className="text-[10px] sm:text-xs text-golden group-hover:underline truncate">Ver auditoría →</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <Link href="/pedidos" className="golden-gradient rounded-xl p-4 sm:p-6 text-dark-golden hover:shadow-lg hover:scale-[1.02] transition-all">
-                                <div className="flex items-center gap-3 sm:gap-4">
-                                    <span className="text-3xl sm:text-4xl">📝</span>
-                                    <div>
-                                        <h4 className="font-bold text-base sm:text-lg">Tomar Pedido</h4>
-                                        <p className="text-xs sm:text-sm opacity-90">Nuevo pedido para cliente</p>
-                                    </div>
-                                </div>
-                            </Link>
-
-                            <Link href="/cocina" className="fire-gradient rounded-xl p-4 sm:p-6 text-white hover:shadow-lg hover:scale-[1.02] transition-all">
-                                <div className="flex items-center gap-3 sm:gap-4">
-                                    <span className="text-3xl sm:text-4xl">👨‍🍳</span>
-                                    <div>
-                                        <h4 className="font-bold text-base sm:text-lg">Cocina</h4>
-                                        <p className="text-xs sm:text-sm opacity-90">Ver pedidos activos</p>
-                                    </div>
-                                </div>
-                            </Link>
-
-                            <Link href="/inventario" className="golden-fire-gradient rounded-xl p-4 sm:p-6 text-white hover:shadow-lg hover:scale-[1.02] transition-all">
-                                <div className="flex items-center gap-3 sm:gap-4">
-                                    <span className="text-3xl sm:text-4xl">🧂</span>
-                                    <div>
-                                        <h4 className="font-bold text-base sm:text-lg">Inventario</h4>
-                                        <p className="text-xs sm:text-sm opacity-90">Gestionar ingredientes</p>
-                                    </div>
-                                </div>
-                            </Link>
-                        </div>
-
-                        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
-                            <div className="flex items-center gap-3 sm:gap-4">
-                                <span className="text-2xl sm:text-3xl animate-fire-pulse">🔥</span>
-                                <div>
-                                    <p className="text-xs sm:text-sm text-gray-500">Pedidos de hoy</p>
-                                    <p className="text-xl sm:text-2xl font-bold text-fire">{stats.pedidosHoy}</p>
-                                </div>
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="glass rounded-xl p-4 border-l-4 border-golden">
+                                <p className="text-xs text-white/40 uppercase tracking-wider">Total Ventas</p>
+                                <p className="text-2xl font-bold text-golden">{formatPrice(stats.totalVentas)}</p>
+                                <p className="text-xs text-white/30 mt-1">Total de pedidos: {stats.totalPedidos}</p>
                             </div>
+                            <div className="glass rounded-xl p-4 border-l-4 border-green-500">
+                                <p className="text-xs text-white/40 uppercase tracking-wider">Ventas Hoy</p>
+                                <p className="text-2xl font-bold text-green-400">{formatPrice(stats.ventasHoy)}</p>
+                                <p className="text-xs text-white/30 mt-1">{stats.pedidosHoy} pedidos hoy</p>
+                            </div>
+                            <div className="glass rounded-xl p-4 border-l-4 border-blue-500">
+                                <p className="text-xs text-white/40 uppercase tracking-wider">Mesas</p>
+                                <p className="text-2xl font-bold text-white">{stats.mesasOcupadas} / {stats.mesasTotales}</p>
+                                <p className="text-xs text-white/30 mt-1">Ocupadas / Totales</p>
+                            </div>
+                            <div className="glass rounded-xl p-4 border-l-4 border-yellow-500">
+                                <p className="text-xs text-white/40 uppercase tracking-wider">Pendientes</p>
+                                <p className="text-2xl font-bold text-yellow-400">{stats.pedidosPendientes}</p>
+                                <p className="text-xs text-white/30 mt-1">Pedidos en cocina</p>
+                            </div>
+                        </div>
+
+                        {/* Productos populares */}
+                        <div className="glass rounded-xl p-6 border border-white/10">
+                            <h3 className="text-lg font-semibold mb-4 text-white flex items-center gap-2">
+                                <TrendingUp size={20} className="text-golden" />
+                                Productos más vendidos
+                            </h3>
+                            {stats.productosPopulares.length === 0 ? (
+                                <p className="text-white/40 text-sm">Sin datos de productos</p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {stats.productosPopulares.map((producto, index) => (
+                                        <div key={index} className="flex items-center justify-between border-b border-white/5 pb-2">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-sm font-bold text-golden">#{index + 1}</span>
+                                                <span className="text-white">{producto.nombre_producto || 'Producto'}</span>
+                                            </div>
+                                            <span className="text-white/60 text-sm">{producto.cantidad}x vendidos</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </>
                 )}
