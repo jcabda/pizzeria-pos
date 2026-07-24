@@ -407,28 +407,67 @@ h4 { font-size: 1.25rem; }
     border: 1px solid rgba(52, 152, 219, 0.2);
 }
 
-/* ===== UTILIDADES ===== */
+/* ===== CLASES DE UTILIDAD PARA OPACIDAD ===== */
+.text-white-90 { color: rgba(255,255,255,0.9); }
+.text-white-80 { color: rgba(255,255,255,0.8); }
+.text-white-70 { color: rgba(255,255,255,0.7); }
+.text-white-60 { color: rgba(255,255,255,0.6); }
+.text-white-50 { color: rgba(255,255,255,0.5); }
+.text-white-40 { color: rgba(255,255,255,0.4); }
+.text-white-30 { color: rgba(255,255,255,0.3); }
+.text-white-20 { color: rgba(255,255,255,0.2); }
+.text-white-10 { color: rgba(255,255,255,0.1); }
+
 .text-golden { color: var(--golden); }
+.text-golden-light { color: var(--golden-light); }
+.text-golden-dark { color: var(--golden-dark); }
 .text-fire { color: var(--fire); }
 .text-fire-orange { color: var(--fire-orange); }
-.text-white-60 { color: var(--text-secondary); }
-.text-white-30 { color: var(--text-muted); }
-.text-white-90 { color: var(--text-primary); }
+.text-fire-dark { color: var(--fire-dark); }
 
+/* ===== BACKGROUNDS ===== */
 .bg-golden { background: var(--golden); }
+.bg-golden/20 { background: rgba(212, 175, 55, 0.2); }
+.bg-golden/10 { background: rgba(212, 175, 55, 0.1); }
 .bg-fire { background: var(--fire); }
+.bg-fire/20 { background: rgba(231, 76, 60, 0.2); }
+.bg-fire/10 { background: rgba(231, 76, 60, 0.1); }
 
+/* ===== BORDERS ===== */
 .border-golden { border-color: var(--golden); }
+.border-golden/30 { border-color: rgba(212, 175, 55, 0.3); }
+.border-golden/20 { border-color: rgba(212, 175, 55, 0.2); }
 .border-fire { border-color: var(--fire); }
+.border-fire/30 { border-color: rgba(231, 76, 60, 0.3); }
+.border-white/10 { border-color: rgba(255, 255, 255, 0.1); }
+.border-white/5 { border-color: rgba(255, 255, 255, 0.05); }
 
+/* ===== SHADOWS ===== */
 .shadow-golden { box-shadow: var(--shadow-golden); }
+.shadow-golden-lg { box-shadow: 0 0 50px rgba(212, 175, 55, 0.25); }
 .shadow-fire { box-shadow: var(--shadow-fire); }
+.shadow-card { box-shadow: var(--shadow-card); }
 
+/* ===== UTILIDADES ===== */
 .gap-1 { gap: 0.25rem; }
 .gap-2 { gap: 0.5rem; }
 .gap-3 { gap: 0.75rem; }
 .gap-4 { gap: 1rem; }
 .gap-6 { gap: 1.5rem; }
+
+/* ===== SCROLLBAR PARA TABLAS ===== */
+.scrollbar-golden::-webkit-scrollbar {
+    width: 4px;
+}
+
+.scrollbar-golden::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.scrollbar-golden::-webkit-scrollbar-thumb {
+    background: var(--golden);
+    border-radius: 10px;
+}
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
@@ -446,16 +485,26 @@ h4 { font-size: 1.25rem; }
     }
 }
 
-/* ===== SCROLLBAR PARA TABLAS ===== */
-.scrollbar-golden::-webkit-scrollbar {
-    width: 4px;
+/* ===== SELECT / OPTION DARK MODE ===== */
+select.input-field {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255,255,255,0.4)' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+    cursor: pointer;
 }
 
-.scrollbar-golden::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
+select.input-field option {
+    background: #1A1A2E;
+    color: #FFFFFF;
 }
 
-.scrollbar-golden::-webkit-scrollbar-thumb {
-    background: var(--golden);
-    border-radius: 10px;
+/* ===== CHECKBOX ACCENT ===== */
+input[type="checkbox"].accent-golden {
+    accent-color: var(--golden);
+}
+
+input[type="checkbox"]:checked {
+    accent-color: var(--golden);
 }
