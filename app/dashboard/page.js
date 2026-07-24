@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import DashboardLayout from '@/components/DashboardLayout'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
+import { formatPrice } from '@/lib/currency'
 
 export default function DashboardPage() {
     const [stats, setStats] = useState({
@@ -74,70 +75,80 @@ export default function DashboardPage() {
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">📊 Panel de Control</h2>
+                {/* Título con marca */}
+                <div className="flex items-center gap-3">
+                    <span className="text-3xl animate-fire-pulse">🔥</span>
+                    <div>
+                        <h2 className="text-2xl font-bold">
+                            <span className="text-golden">Golden</span>
+                            <span className="text-fire"> on </span>
+                            <span className="text-fire-orange">Fire</span>
+                            <span className="text-gray-800"> - Panel de Control</span>
+                        </h2>
+                        <p className="text-sm text-gray-500">🔥 Bienvenido al sistema de gestión</p>
+                    </div>
+                </div>
 
                 {cargando ? (
                     <div className="text-center py-12 text-gray-400">Cargando estadísticas...</div>
                 ) : (
                     <>
-                        {/* 🔹 TARJETAS RESPONSIVE */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                             <Link href="/pedidos" className="block group">
-                                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 group-hover:shadow-md group-hover:border-orange-200 transition-all">
+                                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 group-hover:border-golden group-hover:shadow-md transition-all">
                                     <div className="flex items-center gap-3 sm:gap-4">
                                         <div className="bg-blue-100 rounded-xl p-2.5 sm:p-3 text-2xl sm:text-3xl">📋</div>
                                         <div className="min-w-0">
                                             <p className="text-xs sm:text-sm text-gray-500 truncate">Total Pedidos</p>
                                             <p className="text-lg sm:text-2xl font-bold text-gray-800">{stats.totalPedidos}</p>
-                                            <p className="text-[10px] sm:text-xs text-orange-500 group-hover:underline truncate">Ver pedidos →</p>
+                                            <p className="text-[10px] sm:text-xs text-golden group-hover:underline truncate">Ver pedidos →</p>
                                         </div>
                                     </div>
                                 </div>
                             </Link>
 
                             <Link href="/cocina" className="block group">
-                                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 group-hover:shadow-md group-hover:border-orange-200 transition-all">
+                                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 group-hover:border-fire group-hover:shadow-md transition-all">
                                     <div className="flex items-center gap-3 sm:gap-4">
                                         <div className="bg-yellow-100 rounded-xl p-2.5 sm:p-3 text-2xl sm:text-3xl">⏳</div>
                                         <div className="min-w-0">
                                             <p className="text-xs sm:text-sm text-gray-500 truncate">Pendientes</p>
                                             <p className="text-lg sm:text-2xl font-bold text-gray-800">{stats.pedidosPendientes}</p>
-                                            <p className="text-[10px] sm:text-xs text-orange-500 group-hover:underline truncate">Ver en cocina →</p>
+                                            <p className="text-[10px] sm:text-xs text-fire group-hover:underline truncate">Ver en cocina →</p>
                                         </div>
                                     </div>
                                 </div>
                             </Link>
 
                             <Link href="/inventario" className="block group">
-                                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 group-hover:shadow-md group-hover:border-orange-200 transition-all">
+                                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 group-hover:border-golden group-hover:shadow-md transition-all">
                                     <div className="flex items-center gap-3 sm:gap-4">
                                         <div className="bg-red-100 rounded-xl p-2.5 sm:p-3 text-2xl sm:text-3xl">⚠️</div>
                                         <div className="min-w-0">
                                             <p className="text-xs sm:text-sm text-gray-500 truncate">Stock Crítico</p>
                                             <p className="text-lg sm:text-2xl font-bold text-gray-800">{stats.ingredientesCriticos}</p>
-                                            <p className="text-[10px] sm:text-xs text-orange-500 group-hover:underline truncate">Ver inventario →</p>
+                                            <p className="text-[10px] sm:text-xs text-golden group-hover:underline truncate">Ver inventario →</p>
                                         </div>
                                     </div>
                                 </div>
                             </Link>
 
                             <Link href="/auditoria" className="block group">
-                                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 group-hover:shadow-md group-hover:border-orange-200 transition-all">
+                                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 group-hover:border-golden group-hover:shadow-md transition-all">
                                     <div className="flex items-center gap-3 sm:gap-4">
                                         <div className="bg-green-100 rounded-xl p-2.5 sm:p-3 text-2xl sm:text-3xl">💰</div>
                                         <div className="min-w-0">
                                             <p className="text-xs sm:text-sm text-gray-500 truncate">Ventas Totales</p>
-                                            <p className="text-lg sm:text-2xl font-bold text-gray-800">${stats.totalVentas.toFixed(2)}</p>
-                                            <p className="text-[10px] sm:text-xs text-orange-500 group-hover:underline truncate">Ver auditoría →</p>
+                                            <p className="text-lg sm:text-2xl font-bold text-gray-800">{formatPrice(stats.totalVentas)}</p>
+                                            <p className="text-[10px] sm:text-xs text-golden group-hover:underline truncate">Ver auditoría →</p>
                                         </div>
                                     </div>
                                 </div>
                             </Link>
                         </div>
 
-                        {/* 🔹 ACCESOS RÁPIDOS - RESPONSIVE */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <Link href="/pedidos" className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-4 sm:p-6 text-white hover:shadow-lg hover:scale-[1.02] transition-all">
+                            <Link href="/pedidos" className="golden-gradient rounded-xl p-4 sm:p-6 text-dark-golden hover:shadow-lg hover:scale-[1.02] transition-all">
                                 <div className="flex items-center gap-3 sm:gap-4">
                                     <span className="text-3xl sm:text-4xl">📝</span>
                                     <div>
@@ -147,7 +158,7 @@ export default function DashboardPage() {
                                 </div>
                             </Link>
 
-                            <Link href="/cocina" className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-4 sm:p-6 text-white hover:shadow-lg hover:scale-[1.02] transition-all">
+                            <Link href="/cocina" className="fire-gradient rounded-xl p-4 sm:p-6 text-white hover:shadow-lg hover:scale-[1.02] transition-all">
                                 <div className="flex items-center gap-3 sm:gap-4">
                                     <span className="text-3xl sm:text-4xl">👨‍🍳</span>
                                     <div>
@@ -157,7 +168,7 @@ export default function DashboardPage() {
                                 </div>
                             </Link>
 
-                            <Link href="/inventario" className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 sm:p-6 text-white hover:shadow-lg hover:scale-[1.02] transition-all">
+                            <Link href="/inventario" className="golden-fire-gradient rounded-xl p-4 sm:p-6 text-white hover:shadow-lg hover:scale-[1.02] transition-all">
                                 <div className="flex items-center gap-3 sm:gap-4">
                                     <span className="text-3xl sm:text-4xl">🧂</span>
                                     <div>
@@ -168,13 +179,12 @@ export default function DashboardPage() {
                             </Link>
                         </div>
 
-                        {/* 🔹 PEDIDOS DEL DÍA - RESPONSIVE */}
                         <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
                             <div className="flex items-center gap-3 sm:gap-4">
-                                <span className="text-2xl sm:text-3xl">📆</span>
+                                <span className="text-2xl sm:text-3xl animate-fire-pulse">🔥</span>
                                 <div>
                                     <p className="text-xs sm:text-sm text-gray-500">Pedidos de hoy</p>
-                                    <p className="text-xl sm:text-2xl font-bold text-orange-600">{stats.pedidosHoy}</p>
+                                    <p className="text-xl sm:text-2xl font-bold text-fire">{stats.pedidosHoy}</p>
                                 </div>
                             </div>
                         </div>

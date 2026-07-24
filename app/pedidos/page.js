@@ -745,6 +745,10 @@ function PedidosContent() {
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                             <h2 className="text-xl font-bold">
+                                <span className="text-golden">Golden</span>
+                                <span className="text-fire"> on </span>
+                                <span className="text-fire-orange">Fire</span>
+                                <span className="text-gray-800"> - </span>
                                 {comandaActual ? `🔥 Comanda #${comandaActual.id.slice(0, 8)}` : '📝 Pedido'}
                             </h2>
                             {comandaActual && (
