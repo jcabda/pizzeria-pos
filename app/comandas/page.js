@@ -53,7 +53,7 @@ export default function ComandasPage() {
                 .eq('activo', true)
                 .order('numero')
             setMesas(mesasData || [])
-
+            console.log('📊 Mesas cargadas:', mesasData)
             // Cargar comandas abiertas
             const { data: comandasData } = await supabase
                 .from('comandas')
