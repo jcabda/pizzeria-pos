@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import DashboardLayout from '@/components/DashboardLayout'
 import { supabase } from '@/lib/supabaseClient'
-import { descontarIngredientesPorPedido } from '@/lib/recetas'
-import Link from 'next/link'
-import { Clock, CheckCircle, X, Bell, BellRing } from 'lucide-react'
+import { formatPrice } from '@/lib/currency'
+import { Clock, CheckCircle, X, Bell, BellRing, ChefHat } from 'lucide-react'
 
 export default function CocinaPage() {
     const [pedidos, setPedidos] = useState([])
@@ -13,318 +12,118 @@ export default function CocinaPage() {
     const [filtro, setFiltro] = useState('activos')
     const [tiempos, setTiempos] = useState({})
     const [nuevosPedidos, setNuevosPedidos] = useState([])
-    const [sonidoActivo, setSonidoActivo] = useState(true)
-    const intervalRef = useRef(null)
 
     useEffect(() => {
         cargarPedidos()
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current)
-            }
-        }
+        const interval = setInterval(() => {
+            cargarPedidos()
+            actualizarTiempos()
+        }, 5000)
+        return () => clearInterval(interval)
     }, [filtro])
-
-    useEffect(() => {
-        const hayActivos = pedidos.some(p => ['pendiente', 'preparando'].includes(p.estado))
-        
-        if (hayActivos) {
-            if (!intervalRef.current) {
-                intervalRef.current = setInterval(() => {
-                    actualizarTiempos()
-                }, 1000)
-            }
-        } else {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current)
-                intervalRef.current = null
-            }
-            setTiempos({})
-        }
-
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current)
-                intervalRef.current = null
-            }
-        }
-    }, [pedidos])
-
-    useEffect(() => {
-        const subscription = supabase
-            .channel('pedidos-cocina')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'pedidos'
-                },
-                (payload) => {
-                    const nuevoPedido = payload.new
-                    setNuevosPedidos(prev => [...prev, nuevoPedido.id])
-                    reproducirSonido()
-                    cargarPedidos()
-                    if (Notification.permission === 'granted') {
-                        new Notification('🍕 Nuevo pedido!', {
-                            body: `Pedido #${nuevoPedido.id.slice(0, 8)} - ${nuevoPedido.cliente || 'Cliente general'}`,
-                            icon: '🍕'
-                        })
-                    }
-                }
-            )
-            .subscribe()
-
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission()
-        }
-
-        return () => {
-            subscription.unsubscribe()
-        }
-    }, [])
-
-    const reproducirSonido = () => {
-        if (!sonidoActivo) return
-        try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-            const oscillator = audioCtx.createOscillator()
-            const gainNode = audioCtx.createGain()
-            
-            oscillator.connect(gainNode)
-            gainNode.connect(audioCtx.destination)
-            
-            oscillator.frequency.value = 800
-            oscillator.type = 'sine'
-            
-            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime)
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3)
-            
-            oscillator.start(audioCtx.currentTime)
-            oscillator.stop(audioCtx.currentTime + 0.3)
-            
-            setTimeout(() => {
-                const osc2 = audioCtx.createOscillator()
-                const gain2 = audioCtx.createGain()
-                osc2.connect(gain2)
-                gain2.connect(audioCtx.destination)
-                osc2.frequency.value = 1000
-                osc2.type = 'sine'
-                gain2.gain.setValueAtTime(0.3, audioCtx.currentTime)
-                gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2)
-                osc2.start(audioCtx.currentTime)
-                osc2.stop(audioCtx.currentTime + 0.2)
-            }, 150)
-        } catch (e) {
-            console.log('Sonido no disponible')
-        }
-    }
-
-    const actualizarTiempos = () => {
-        if (!pedidos || pedidos.length === 0) return
-
-        const ahora = new Date()
-        const nuevosTiempos = {}
-        
-        pedidos.forEach(p => {
-            if (!['pendiente', 'preparando', 'listo'].includes(p.estado)) {
-                nuevosTiempos[p.id] = 0
-                return
-            }
-
-            if (!p.tiempos) {
-                nuevosTiempos[p.id] = 0
-                return
-            }
-
-            let totalSegundos = 0
-            const estados = ['pendiente', 'preparando', 'listo']
-            let enEstadoActual = false
-            
-            for (const estado of estados) {
-                const inicio = p.tiempos[`${estado}_inicio`]
-                const fin = p.tiempos[`${estado}_fin`]
-                
-                if (inicio) {
-                    const inicioDate = new Date(inicio)
-                    
-                    if (fin) {
-                        const finDate = new Date(fin)
-                        totalSegundos += Math.floor((finDate - inicioDate) / 1000)
-                    } else {
-                        totalSegundos += Math.floor((ahora - inicioDate) / 1000)
-                        enEstadoActual = true
-                        break
-                    }
-                }
-            }
-            
-            nuevosTiempos[p.id] = totalSegundos
-        })
-        
-        setTiempos(nuevosTiempos)
-    }
 
     const cargarPedidos = async () => {
         try {
+            // Cargar pedidos de la tabla pedidos
             const { data, error } = await supabase
                 .from('pedidos')
-                .select('*')
+                .select(`
+                    *,
+                    usuarios (nombre, avatar)
+                `)
                 .order('fecha', { ascending: false })
 
-            if (error) {
-                console.error('Error en consulta:', error)
-                setPedidos([])
-                return
-            }
+            if (error) throw error
 
-            if (!data) {
-                setPedidos([])
-                return
-            }
+            // También cargar comandas con estado "en_cocina"
+            const { data: comandasData } = await supabase
+                .from('comandas')
+                .select(`
+                    *,
+                    mesas (numero),
+                    usuarios (nombre, avatar)
+                `)
+                .eq('estado_pedido', 'en_cocina')
 
-            const pedidosConDetalles = []
-            for (const pedido of data) {
-                const { data: usuarioData } = await supabase
-                    .from('usuarios')
-                    .select('nombre, avatar')
-                    .eq('id', pedido.empleado_id)
-                    .single()
+            // Combinar pedidos y comandas
+            const pedidosFormateados = data?.map(p => ({
+                ...p,
+                es_comanda: false,
+                mesa_numero: null
+            })) || []
 
-                const { data: detallesData } = await supabase
-                    .from('pedido_detalles')
-                    .select(`
-                        cantidad,
-                        precio_unitario,
-                        tamanio_nombre,
-                        sabor_nombre,
-                        toppings_seleccionados,
-                        producto_menu_id,
-                        nombre_producto,
-                        es_porcion
-                    `)
-                    .eq('pedido_id', pedido.id)
+            const comandasFormateadas = comandasData?.map(c => ({
+                id: c.id,
+                empleado_id: c.mesero_id,
+                cliente: c.cliente_nombre,
+                total: c.subtotal,
+                estado: 'preparando',
+                fecha: c.created_at,
+                tiempos: { preparando_inicio: c.created_at },
+                usuarios: c.usuarios,
+                es_comanda: true,
+                mesa_numero: c.mesas?.numero
+            })) || []
 
-                const detallesConProductos = []
-                if (detallesData) {
-                    for (const detalle of detallesData) {
-                        let productoNombre = detalle.nombre_producto || 'Producto'
-                        if (!productoNombre && detalle.producto_menu_id) {
-                            const { data: productoData } = await supabase
-                                .from('productos_menu')
-                                .select('nombre')
-                                .eq('id', detalle.producto_menu_id)
-                                .single()
-                            if (productoData) {
-                                productoNombre = productoData.nombre
-                            }
-                        }
-                        detallesConProductos.push({
-                            ...detalle,
-                            productos_menu: { nombre: productoNombre }
-                        })
-                    }
-                }
+            const todos = [...pedidosFormateados, ...comandasFormateadas]
 
-                pedidosConDetalles.push({
-                    ...pedido,
-                    usuarios: usuarioData || { nombre: 'Sin empleado', avatar: '👤' },
-                    pedido_detalles: detallesConProductos
-                })
-            }
-
-            let pedidosFiltrados = pedidosConDetalles
+            // Aplicar filtro
+            let filtrados = todos
             if (filtro === 'activos') {
-                pedidosFiltrados = pedidosConDetalles.filter(p => 
+                filtrados = todos.filter(p => 
                     ['pendiente', 'preparando'].includes(p.estado)
                 )
             } else if (filtro === 'completados') {
-                pedidosFiltrados = pedidosConDetalles.filter(p => 
+                filtrados = todos.filter(p => 
                     ['entregado'].includes(p.estado)
                 )
             } else if (filtro !== 'todos') {
-                pedidosFiltrados = pedidosConDetalles.filter(p => p.estado === filtro)
+                filtrados = todos.filter(p => p.estado === filtro)
             }
 
-            pedidosFiltrados.sort((a, b) => {
-                const aActivo = ['pendiente', 'preparando'].includes(a.estado)
-                const bActivo = ['pendiente', 'preparando'].includes(b.estado)
-                if (aActivo && !bActivo) return -1
-                if (!aActivo && bActivo) return 1
-                return 0
-            })
-
-            setPedidos(pedidosFiltrados)
-            setNuevosPedidos([])
-
-            setTimeout(() => {
-                actualizarTiempos()
-            }, 100)
+            setPedidos(filtrados)
 
         } catch (error) {
             console.error('Error cargando pedidos:', error)
-            setPedidos([])
         } finally {
             setCargando(false)
         }
     }
 
-    const actualizarEstado = async (pedidoId, nuevoEstado) => {
+    const actualizarTiempos = () => {
+        const ahora = new Date()
+        const nuevosTiempos = {}
+        pedidos.forEach(p => {
+            if (p.tiempos?.preparando_inicio) {
+                const inicio = new Date(p.tiempos.preparando_inicio)
+                nuevosTiempos[p.id] = Math.floor((ahora - inicio) / 1000)
+            } else {
+                nuevosTiempos[p.id] = 0
+            }
+        })
+        setTiempos(nuevosTiempos)
+    }
+
+    const actualizarEstado = async (pedidoId, nuevoEstado, esComanda) => {
         try {
-            const { data: pedido } = await supabase
-                .from('pedidos')
-                .select('tiempos')
-                .eq('id', pedidoId)
-                .single()
-
-            let tiempos = pedido?.tiempos || {}
-            const ahora = new Date().toISOString()
-
-            if (nuevoEstado === 'preparando') {
-                tiempos.pendiente_fin = ahora
-                tiempos.preparando_inicio = ahora
-            } else if (nuevoEstado === 'listo') {
-                tiempos.preparando_fin = ahora
-                tiempos.listo_inicio = ahora
-            } else if (nuevoEstado === 'entregado') {
-                tiempos.listo_fin = ahora
-                tiempos.entregado_inicio = ahora
-                
-                const userData = localStorage.getItem('usuario')
-                if (userData) {
-                    const usuario = JSON.parse(userData)
-                    await descontarIngredientesPorPedido(pedidoId, usuario.id)
-                }
-            } else if (nuevoEstado === 'cancelado') {
-                tiempos.pendiente_fin = ahora
-            }
-
-            const { error } = await supabase
-                .from('pedidos')
-                .update({ 
-                    estado: nuevoEstado,
-                    tiempos: tiempos
-                })
-                .eq('id', pedidoId)
-
-            if (error) throw error
-
-            const userData = localStorage.getItem('usuario')
-            if (userData) {
-                const usuario = JSON.parse(userData)
+            if (esComanda) {
+                // Actualizar comanda
                 await supabase
-                    .from('auditoria')
-                    .insert({
-                        usuario_id: usuario.id,
-                        accion: `Cambió estado pedido #${pedidoId.slice(0, 8)} a ${nuevoEstado} (cocina)`
+                    .from('comandas')
+                    .update({ 
+                        estado_pedido: nuevoEstado === 'entregado' ? 'entregado' : nuevoEstado
                     })
+                    .eq('id', pedidoId)
+            } else {
+                // Actualizar pedido normal
+                await supabase
+                    .from('pedidos')
+                    .update({ estado: nuevoEstado })
+                    .eq('id', pedidoId)
             }
-
             cargarPedidos()
-            
         } catch (error) {
             console.error('Error actualizando estado:', error)
-            alert('Error al actualizar el estado')
         }
     }
 
@@ -350,24 +149,11 @@ export default function CocinaPage() {
         return colores[estado] || 'border-gray-300 bg-gray-50'
     }
 
-    const getEstadoBadgeColor = (estado) => {
-        const colores = {
-            pendiente: 'badge-warning',
-            preparando: 'badge-info',
-            listo: 'badge-success',
-            entregado: 'badge-neutral',
-            cancelado: 'badge-danger'
-        }
-        return colores[estado] || 'badge-neutral'
-    }
-
     const formatearTiempo = (segundos) => {
-        if (!segundos || segundos === 0) return '0s'
+        if (!segundos) return '0s'
         const mins = Math.floor(segundos / 60)
         const secs = segundos % 60
-        if (mins > 0) {
-            return `${mins}m ${secs}s`
-        }
+        if (mins > 0) return `${mins}m ${secs}s`
         return `${secs}s`
     }
 
@@ -377,40 +163,6 @@ export default function CocinaPage() {
         if (segundos < 300) return 'text-orange-600'
         return 'text-red-600 font-bold animate-pulse'
     }
-
-    const getTiempoProgreso = (segundos) => {
-        const max = 600
-        const progreso = Math.min((segundos / max) * 100, 100)
-        return progreso
-    }
-
-    const getContadorEstados = () => {
-        const conteo = { 
-            todos: pedidos.length, 
-            activos: 0,
-            completados: 0
-        }
-        pedidos.forEach(p => {
-            if (['pendiente', 'preparando'].includes(p.estado)) {
-                conteo.activos++
-            }
-            if (p.estado === 'entregado') {
-                conteo.completados++
-            }
-            conteo[p.estado] = (conteo[p.estado] || 0) + 1
-        })
-        return conteo
-    }
-
-    const conteo = getContadorEstados()
-
-    const pedidosOrdenados = [...pedidos].sort((a, b) => {
-        const aActivo = ['pendiente', 'preparando'].includes(a.estado)
-        const bActivo = ['pendiente', 'preparando'].includes(b.estado)
-        if (aActivo && !bActivo) return -1
-        if (!aActivo && bActivo) return 1
-        return (tiempos[b.id] || 0) - (tiempos[a.id] || 0)
-    })
 
     return (
         <DashboardLayout>
@@ -426,15 +178,6 @@ export default function CocinaPage() {
                         )}
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                        <button
-                            onClick={() => setSonidoActivo(!sonidoActivo)}
-                            className={`btn-secondary text-sm py-1 px-3 flex items-center gap-1 ${
-                                sonidoActivo ? 'bg-green-600 text-white' : ''
-                            }`}
-                        >
-                            {sonidoActivo ? <Bell size={16} /> : <Bell size={16} className="text-gray-400" />}
-                            {sonidoActivo ? 'Sonido ON' : 'Sonido OFF'}
-                        </button>
                         <span className="text-sm text-gray-500 flex items-center gap-1">
                             <Clock size={14} className="text-green-500 animate-pulse" />
                             Tiempo real
@@ -458,7 +201,7 @@ export default function CocinaPage() {
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
                             filtro === 'activos' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-600'
                         }`}>
-                            {conteo.activos}
+                            {pedidos.filter(p => ['pendiente', 'preparando'].includes(p.estado)).length}
                         </span>
                     </button>
                     <button
@@ -473,7 +216,7 @@ export default function CocinaPage() {
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
                             filtro === 'todos' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-600'
                         }`}>
-                            {conteo.todos}
+                            {pedidos.length}
                         </span>
                     </button>
                     <button
@@ -488,7 +231,7 @@ export default function CocinaPage() {
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
                             filtro === 'completados' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-600'
                         }`}>
-                            {conteo.completados}
+                            {pedidos.filter(p => p.estado === 'entregado').length}
                         </span>
                     </button>
                 </div>
@@ -498,33 +241,28 @@ export default function CocinaPage() {
                 ) : pedidos.length === 0 ? (
                     <div className="text-center py-12 text-gray-500">
                         <p className="text-6xl mb-4">🍕</p>
-                        <p className="text-lg font-medium">No hay pedidos {filtro === 'activos' ? 'activos' : ''}</p>
-                        <p className="text-sm text-gray-400">Los pedidos aparecerán aquí automáticamente</p>
+                        <p className="text-lg font-medium">No hay pedidos activos</p>
+                        <p className="text-sm text-gray-400">Los pedidos aparecerán aquí</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {pedidosOrdenados.map((pedido) => {
+                        {pedidos.map((pedido) => {
                             const tiempoActual = tiempos[pedido.id] || 0
                             const tiempoColor = getTiempoColor(tiempoActual)
-                            const progreso = getTiempoProgreso(tiempoActual)
                             const esActivo = ['pendiente', 'preparando'].includes(pedido.estado)
-                            const esNuevo = nuevosPedidos.includes(pedido.id)
 
                             return (
                                 <div
                                     key={pedido.id}
-                                    className={`bg-white rounded-xl shadow-md p-4 border-l-4 ${getEstadoColor(pedido.estado)} hover:shadow-lg transition-shadow ${!esActivo ? 'opacity-75' : ''} ${esNuevo ? 'ring-2 ring-orange-400 animate-pulse-soft' : ''}`}
+                                    className={`bg-white rounded-xl shadow-md p-4 border-l-4 ${getEstadoColor(pedido.estado)} hover:shadow-lg transition-shadow ${!esActivo ? 'opacity-75' : ''}`}
                                 >
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
-                                            <p className="font-mono text-sm font-bold text-gray-600 flex items-center gap-2">
+                                            <p className="font-mono text-sm font-bold text-gray-600">
                                                 #{pedido.id.slice(0, 8)}
-                                                <span className={`badge ${getEstadoBadgeColor(pedido.estado)} text-xs`}>
-                                                    {pedido.estado}
-                                                </span>
-                                                {esNuevo && (
-                                                    <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full animate-pulse">
-                                                        NUEVO
+                                                {pedido.es_comanda && (
+                                                    <span className="text-xs bg-purple-100 text-purple-700 ml-1 px-1.5 py-0.5 rounded">
+                                                        Mesa {pedido.mesa_numero}
                                                     </span>
                                                 )}
                                             </p>
@@ -540,20 +278,6 @@ export default function CocinaPage() {
                                         </span>
                                     </div>
 
-                                    {esActivo && (
-                                        <div className="w-full bg-gray-200 rounded-full h-1.5 mb-3 overflow-hidden">
-                                            <div
-                                                className={`h-1.5 rounded-full transition-all duration-1000 ${
-                                                    tiempoActual > 300 ? 'bg-red-500' :
-                                                    tiempoActual > 180 ? 'bg-orange-500' :
-                                                    tiempoActual > 60 ? 'bg-yellow-500' :
-                                                    'bg-green-500'
-                                                }`}
-                                                style={{ width: `${Math.min(progreso, 100)}%` }}
-                                            />
-                                        </div>
-                                    )}
-
                                     <div className="mb-3 space-y-1">
                                         <p className="text-sm text-gray-600">
                                             👨‍🍳 {pedido.usuarios?.nombre || 'Sin empleado'}
@@ -563,76 +287,48 @@ export default function CocinaPage() {
                                         </p>
                                     </div>
 
-                                    <div className="bg-gray-50 rounded-lg p-3 mb-3 max-h-24 overflow-y-auto">
-                                        <p className="text-xs font-medium text-gray-500 mb-2">📦 Productos:</p>
-                                        {pedido.pedido_detalles?.map((detalle, index) => (
-                                            <div key={index} className="flex justify-between text-sm">
-                                                <span>
-                                                    {detalle.cantidad}x {detalle.productos_menu?.nombre || 'Producto'}
-                                                    {detalle.tamanio_nombre && ` (${detalle.tamanio_nombre})`}
-                                                    {detalle.sabor_nombre && ` - ${detalle.sabor_nombre}`}
-                                                    {detalle.es_porcion && ' 🍕 Porción'}
-                                                </span>
-                                                <span className="text-gray-600">
-                                                    ${(detalle.cantidad * detalle.precio_unitario).toFixed(2)}
-                                                </span>
-                                            </div>
-                                        ))}
+                                    <div className="bg-gray-50 rounded-lg p-3 mb-3 max-h-20 overflow-y-auto">
+                                        <p className="text-xs font-medium text-gray-500 mb-1">📦 Items:</p>
+                                        <p className="text-sm text-gray-600">
+                                            {pedido.es_comanda ? 'Comanda de mesa' : 'Pedido regular'}
+                                        </p>
+                                        <p className="text-xs text-gray-400">
+                                            Total: {formatPrice(pedido.total)}
+                                        </p>
                                     </div>
 
                                     <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                                         <span className="font-bold text-lg text-orange-600">
-                                            ${pedido.total}
+                                            {formatPrice(pedido.total)}
                                         </span>
                                         <div className="flex gap-1 flex-wrap justify-end">
                                             {pedido.estado === 'pendiente' && (
-                                                <>
-                                                    <button
-                                                        onClick={() => actualizarEstado(pedido.id, 'preparando')}
-                                                        className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                                                    >
-                                                        🔪 Cocinar
-                                                    </button>
-                                                    <button
-                                                        onClick={() => actualizarEstado(pedido.id, 'cancelado')}
-                                                        className="bg-red-500 text-white text-sm px-3 py-2 rounded-lg hover:bg-red-600 transition-colors font-medium"
-                                                    >
-                                                        <X size={18} />
-                                                    </button>
-                                                </>
+                                                <button
+                                                    onClick={() => actualizarEstado(pedido.id, 'preparando', pedido.es_comanda)}
+                                                    className="bg-blue-600 text-white text-sm px-3 py-1 rounded hover:bg-blue-700 transition-colors"
+                                                >
+                                                    🔪 Cocinar
+                                                </button>
                                             )}
                                             {pedido.estado === 'preparando' && (
-                                                <>
-                                                    <button
-                                                        onClick={() => actualizarEstado(pedido.id, 'listo')}
-                                                        className="bg-green-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
-                                                    >
-                                                        ✅ Listo
-                                                    </button>
-                                                    <button
-                                                        onClick={() => actualizarEstado(pedido.id, 'cancelado')}
-                                                        className="bg-red-500 text-white text-sm px-3 py-2 rounded-lg hover:bg-red-600 transition-colors font-medium"
-                                                    >
-                                                        <X size={18} />
-                                                    </button>
-                                                </>
+                                                <button
+                                                    onClick={() => actualizarEstado(pedido.id, 'listo', pedido.es_comanda)}
+                                                    className="bg-green-600 text-white text-sm px-3 py-1 rounded hover:bg-green-700 transition-colors"
+                                                >
+                                                    ✅ Listo
+                                                </button>
                                             )}
                                             {pedido.estado === 'listo' && (
                                                 <button
-                                                    onClick={() => actualizarEstado(pedido.id, 'entregado')}
-                                                    className="bg-purple-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                                                    onClick={() => actualizarEstado(pedido.id, 'entregado', pedido.es_comanda)}
+                                                    className="bg-purple-600 text-white text-sm px-3 py-1 rounded hover:bg-purple-700 transition-colors"
                                                 >
                                                     📦 Entregar
                                                 </button>
                                             )}
                                             {pedido.estado === 'entregado' && (
-                                                <span className="text-xs text-green-600 font-medium flex items-center gap-1 bg-green-50 px-3 py-2 rounded-lg">
-                                                    <CheckCircle size={16} /> Completado
-                                                </span>
-                                            )}
-                                            {pedido.estado === 'cancelado' && (
-                                                <span className="text-xs text-red-500 font-medium bg-red-50 px-3 py-2 rounded-lg">
-                                                    ❌ Cancelado
+                                                <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                                                    <CheckCircle size={14} /> Completado
                                                 </span>
                                             )}
                                         </div>
@@ -642,15 +338,6 @@ export default function CocinaPage() {
                         })}
                     </div>
                 )}
-
-                <div className="flex gap-4 mt-4">
-                    <Link href="/pedidos" className="btn-primary text-sm">
-                        📝 Tomar Pedido
-                    </Link>
-                    <Link href="/dashboard" className="btn-ghost text-sm">
-                        📊 Dashboard
-                    </Link>
-                </div>
             </div>
         </DashboardLayout>
     )

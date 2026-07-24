@@ -7,20 +7,19 @@ export default function HomePage() {
     const router = useRouter()
 
     useEffect(() => {
-        // Verificar si hay usuario logueado
         const usuario = localStorage.getItem('usuario')
         if (usuario) {
-            router.push('/dashboard')
+            router.push('/comandas')
         } else {
             router.push('/login')
         }
     }, [router])
 
     return (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
             <div className="text-center">
-                <div className="text-4xl mb-4">⏳</div>
-                <p>Redirigiendo...</p>
+                <div className="text-4xl mb-4 animate-pulse">🍕</div>
+                <p className="text-gray-600">Redirigiendo...</p>
             </div>
         </div>
     )
