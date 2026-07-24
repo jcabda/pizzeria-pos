@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { 
     Home, ClipboardList, ChefHat, BarChart3, 
     Users, Package, Pizza, FolderOpen, FileText,
@@ -43,7 +42,7 @@ export default function DashboardLayout({ children }) {
             <div className="min-h-screen flex items-center justify-center bg-[#0A0A12]">
                 <div className="text-center">
                     <div className="text-5xl mb-4 animate-fire-pulse">🔥</div>
-                    <p className="text-white-40">Cargando...</p>
+                    <p className="text-white/40">Cargando...</p>
                 </div>
             </div>
         )
@@ -121,7 +120,6 @@ export default function DashboardLayout({ children }) {
 
     const allLinks = [...pestañasPrincipales]
     if (esAdmin || tieneAlgunPermiso) {
-        // ✅ CORREGIDO: /administracion → /admin
         allLinks.push({ href: '/admin', icon: Shield, label: 'Admin Tools' })
     }
 
@@ -137,7 +135,7 @@ export default function DashboardLayout({ children }) {
                                 <img 
                                     src="/images/logo.png" 
                                     alt="Golden on Fire" 
-                                    className="w-10 h-10 object-contain"
+                                    className="w-full h-full object-contain"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 blur-xl opacity-30 animate-pulse"></div>
                             </div>
@@ -147,7 +145,7 @@ export default function DashboardLayout({ children }) {
                                     <span className="text-white"> on </span>
                                     <span className="text-gradient-fire">Fire</span>
                                 </h1>
-                                <p className="text-xs text-white-30 hidden sm:block">🔥 Sistema de punto de venta</p>
+                                <p className="text-xs text-white/30 hidden sm:block">🔥 Sistema de punto de venta</p>
                             </div>
                         </Link>
 
@@ -160,7 +158,7 @@ export default function DashboardLayout({ children }) {
                                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
                                         isActive(link.href)
                                             ? 'bg-golden/20 text-golden border border-golden/30'
-                                            : 'text-white-60 hover:text-white hover:bg-white/5'
+                                            : 'text-white/60 hover:text-white hover:bg-white/5'
                                     }`}
                                 >
                                     <link.icon size={18} />
@@ -174,7 +172,7 @@ export default function DashboardLayout({ children }) {
                                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
                                         isAdminToolsActive
                                             ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                                            : 'text-white-60 hover:text-white hover:bg-white/5'
+                                            : 'text-white/60 hover:text-white hover:bg-white/5'
                                     }`}
                                 >
                                     <Shield size={18} />
@@ -189,7 +187,7 @@ export default function DashboardLayout({ children }) {
                                 <span className="text-xl">{usuario.avatar || '👤'}</span>
                                 <div className="hidden sm:block">
                                     <p className="text-sm font-medium text-white">{usuario.nombre}</p>
-                                    <p className="text-xs text-white-40 capitalize">{usuario.rol}</p>
+                                    <p className="text-xs text-white/40 capitalize">{usuario.rol}</p>
                                 </div>
                             </div>
                             <button
@@ -201,7 +199,7 @@ export default function DashboardLayout({ children }) {
 
                             <button
                                 onClick={() => setMenuAbierto(!menuAbierto)}
-                                className="lg:hidden p-2 rounded-lg text-white-60 hover:text-white hover:bg-white/5 transition-all"
+                                className="lg:hidden p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-all"
                             >
                                 {menuAbierto ? <X size={24} /> : <Menu size={24} />}
                             </button>
@@ -245,14 +243,14 @@ export default function DashboardLayout({ children }) {
             {pathname !== '/dashboard' && (
                 <div className="bg-white/5 backdrop-blur-sm border-b border-white/5 py-2 px-4 sm:px-6 lg:px-8">
                     <div className="max-w-7xl mx-auto flex items-center gap-2 text-sm">
-                        <Link href="/comandas" className="text-white-30 hover:text-golden transition-colors">
+                        <Link href="/comandas" className="text-white/30 hover:text-golden transition-colors">
                             🏠
                         </Link>
-                        <span className="text-white-20">/</span>
-                        <span className="text-white-60 font-medium capitalize">
+                        <span className="text-white/20">/</span>
+                        <span className="text-white/60 font-medium capitalize">
                             {pathname.split('/').pop() || 'Inicio'}
                         </span>
-                        <span className="ml-auto text-xs text-white-20">
+                        <span className="ml-auto text-xs text-white/20">
                             {new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                     </div>
@@ -272,7 +270,7 @@ export default function DashboardLayout({ children }) {
                                     className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                                         isActive(link.href)
                                             ? 'bg-golden/20 text-golden border border-golden/30'
-                                            : 'text-white-60 hover:text-white hover:bg-white/5'
+                                            : 'text-white/60 hover:text-white hover:bg-white/5'
                                     }`}
                                 >
                                     <link.icon size={18} />

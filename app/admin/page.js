@@ -31,7 +31,6 @@ export default function AdminPage() {
         { href: '/admin/tamanios', icon: Ruler, label: 'Tamaños', desc: 'Modificar tamaños de pizza' },
         { href: '/admin/tipos', icon: Tag, label: 'Tipos', desc: 'Gestionar tipos de productos' },
         { href: '/admin/unidades', icon: Scale, label: 'Unidades', desc: 'Gestionar unidades de medida' },
-        // ✅ NUEVO: Cocina en Admin Tools
         { href: '/cocina', icon: ChefHat, label: 'Cocina', desc: 'Panel de cocina' },
     ]
 
@@ -39,10 +38,10 @@ export default function AdminPage() {
         <DashboardLayout>
             <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                    <Shield size={32} className="text-purple-600" />
+                    <Shield size={32} className="text-golden" />
                     <div>
-                        <h2 className="text-2xl font-bold">Panel de Administración</h2>
-                        <p className="text-sm text-gray-500">Gestiona todos los aspectos del sistema</p>
+                        <h2 className="text-2xl font-bold text-white">Panel de Administración</h2>
+                        <p className="text-sm text-white/40">Gestiona todos los aspectos del sistema</p>
                     </div>
                 </div>
 
@@ -51,16 +50,16 @@ export default function AdminPage() {
                         <Link
                             key={mod.href}
                             href={mod.href}
-                            className="bg-white rounded-xl shadow-sm p-5 border border-gray-100 hover:shadow-md hover:border-purple-200 transition-all group"
+                            className="glass rounded-xl p-5 border border-white/10 hover:border-golden/30 hover:shadow-golden transition-all group"
                         >
                             <div className="flex items-start gap-4">
-                                <div className="bg-purple-100 rounded-xl p-3">
-                                    <mod.icon size={22} className="text-purple-600" />
+                                <div className="bg-golden/10 rounded-xl p-3 border border-golden/20">
+                                    <mod.icon size={22} className="text-golden" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-gray-800">{mod.label}</h3>
-                                    <p className="text-sm text-gray-500 mt-0.5">{mod.desc}</p>
-                                    <span className="text-xs text-purple-600 group-hover:underline inline-flex items-center gap-1 mt-1">
+                                    <h3 className="font-semibold text-white">{mod.label}</h3>
+                                    <p className="text-sm text-white/40 mt-0.5">{mod.desc}</p>
+                                    <span className="text-xs text-golden group-hover:underline inline-flex items-center gap-1 mt-1">
                                         Gestionar →
                                     </span>
                                 </div>
@@ -69,8 +68,8 @@ export default function AdminPage() {
                     ))}
                 </div>
 
-                <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
-                    <p className="text-sm text-purple-700 flex items-center gap-2">
+                <div className="glass-golden rounded-xl p-4 border border-golden/20">
+                    <p className="text-sm text-golden/80 flex items-center gap-2">
                         <Shield size={16} />
                         Estas herramientas solo están disponibles para administradores
                     </p>
