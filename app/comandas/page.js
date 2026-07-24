@@ -14,6 +14,7 @@ export default function ComandasPage() {
     const [mesas, setMesas] = useState([])
     const [comandas, setComandas] = useState([])
     const [cargando, setCargando] = useState(true)
+    const [error, setError] = useState(null)
     const [mesaSeleccionada, setMesaSeleccionada] = useState(null)
     const [mostrarModal, setMostrarModal] = useState(false)
     const [clienteNombre, setClienteNombre] = useState('')
@@ -45,17 +46,29 @@ export default function ComandasPage() {
     }
 
     const cargarDatos = async () => {
+        setCargando(true)
+        setError(null)
         try {
+            console.log('🔄 Cargando datos...')
+            
             // Cargar mesas
-            const { data: mesasData } = await supabase
+            const { data: mesasData, error: mesasError } = await supabase
                 .from('mesas')
                 .select('*')
                 .eq('activo', true)
                 .order('numero')
-            setMesas(mesasData || [])
-            console.log('📊 Mesas cargadas:', mesasData)
+
+            if (mesasError) {
+                console.error('❌ Error cargando mesas:', mesasError)
+                setError('Error al cargar las mesas: ' + mesasError.message)
+                setMesas([])
+            } else {
+                console.log('✅ Mesas cargadas:', mesasData)
+                setMesas(mesasData || [])
+            }
+
             // Cargar comandas abiertas
-            const { data: comandasData } = await supabase
+            const { data: comandasData, error: comandasError } = await supabase
                 .from('comandas')
                 .select(`
                     *,
@@ -64,7 +77,13 @@ export default function ComandasPage() {
                 `)
                 .eq('estado', 'abierta')
                 .order('created_at', { ascending: false })
-            setComandas(comandasData || [])
+
+            if (comandasError) {
+                console.error('❌ Error cargando comandas:', comandasError)
+            } else {
+                console.log('✅ Comandas cargadas:', comandasData)
+                setComandas(comandasData || [])
+            }
 
             // Cargar items de cada comanda
             for (const comanda of comandasData || []) {
@@ -77,8 +96,15 @@ export default function ComandasPage() {
                     .eq('comanda_id', comanda.id)
                 setItemsComanda(prev => ({ ...prev, [comanda.id]: items || [] }))
             }
+
+            if (mesasData?.length === 0) {
+                console.warn('⚠️ No hay mesas en la base de datos')
+                setError('No hay mesas registradas. Ejecuta el SQL para crear mesas.')
+            }
+
         } catch (error) {
-            console.error('Error:', error)
+            console.error('❌ Error general:', error)
+            setError('Error al cargar los datos: ' + error.message)
         } finally {
             setCargando(false)
         }
@@ -128,7 +154,10 @@ export default function ComandasPage() {
                 .eq('id', mesaSeleccionada.id)
 
             setMostrarModal(false)
-            resetModal()
+            setMesaSeleccionada(null)
+            setClienteNombre('')
+            setTipoCliente('local')
+            setMeseroId('')
             cargarDatos()
             
             alert(`✅ Comanda #${data.id.slice(0, 8)} abierta para Mesa ${mesaSeleccionada.numero}`)
@@ -138,16 +167,8 @@ export default function ComandasPage() {
         }
     }
 
-    const resetModal = () => {
-        setMesaSeleccionada(null)
-        setClienteNombre('')
-        setTipoCliente('local')
-        setMeseroId('')
-    }
-
     const verCuenta = async (comandaId) => {
         setMostrarCuenta(comandaId)
-        // Recargar items para la cuenta
         const { data: items } = await supabase
             .from('comanda_items')
             .select(`
@@ -203,7 +224,6 @@ export default function ComandasPage() {
 
             if (error) throw error
 
-            // Recalcular subtotal
             const { data: items } = await supabase
                 .from('comanda_items')
                 .select('subtotal')
@@ -216,7 +236,6 @@ export default function ComandasPage() {
                 .update({ subtotal: nuevoSubtotal })
                 .eq('id', comandaId)
 
-            // Actualizar items local
             setItemsComanda(prev => ({
                 ...prev,
                 [comandaId]: prev[comandaId]?.filter(item => item.id !== itemId) || []
@@ -256,6 +275,26 @@ export default function ComandasPage() {
         return tipos[tipo] || tipo
     }
 
+    // Si hay error, mostrar mensaje
+    if (error) {
+        return (
+            <DashboardLayout>
+                <div className="space-y-6">
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                        <p className="text-2xl mb-2">⚠️</p>
+                        <p className="text-red-700 font-medium">{error}</p>
+                        <button 
+                            onClick={cargarDatos} 
+                            className="mt-4 btn-primary text-sm"
+                        >
+                            🔄 Reintentar
+                        </button>
+                    </div>
+                </div>
+            </DashboardLayout>
+        )
+    }
+
     return (
         <DashboardLayout>
             <div className="space-y-6">
@@ -280,11 +319,18 @@ export default function ComandasPage() {
                 {/* Grid de Mesas */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     {cargando ? (
-                        <div className="col-span-full text-center py-12 text-gray-500">Cargando...</div>
+                        <div className="col-span-full text-center py-12 text-gray-500">Cargando mesas...</div>
                     ) : mesas.length === 0 ? (
                         <div className="col-span-full text-center py-12 text-gray-500">
                             <p className="text-4xl mb-2">🍽️</p>
                             <p>No hay mesas registradas</p>
+                            <p className="text-sm text-gray-400">Ejecuta el SQL en Supabase para crear mesas</p>
+                            <button 
+                                onClick={cargarDatos} 
+                                className="mt-4 btn-primary text-sm"
+                            >
+                                🔄 Reintentar
+                            </button>
                         </div>
                     ) : (
                         mesas.map((mesa) => {
