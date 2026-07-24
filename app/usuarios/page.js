@@ -25,12 +25,14 @@ export default function UsuariosPage() {
             auditoria: false,
             tamanios: false,
             tipos: false,
-            unidades: false
+            unidades: false,
+            cocina: false // ✅ NUEVO PERMISO
         }
     })
 
     const AVATARS = ['👤', '🍕', '🚀', '🍔', '👨‍🍳', '👩‍🍳', '⭐', '💪', '🎯', '🔥', '👑', '🦁', '🐉', '🌟']
 
+    // ✅ NUEVO: PERMISO COCINA AGREGADO
     const PERMISOS_LIST = [
         { key: 'productos', label: '🍕 Productos' },
         { key: 'inventario', label: '🧂 Inventario' },
@@ -40,6 +42,7 @@ export default function UsuariosPage() {
         { key: 'tamanios', label: '📏 Tamaños' },
         { key: 'tipos', label: '🏷️ Tipos' },
         { key: 'unidades', label: '📐 Unidades' },
+        { key: 'cocina', label: '👨‍🍳 Cocina' } // ✅ NUEVO
     ]
 
     useEffect(() => {
@@ -55,7 +58,6 @@ export default function UsuariosPage() {
                 .order('nombre')
             setUsuarios(data || [])
             
-            // Inicializar visibilidad de permisos
             const visibilidad = {}
             data?.forEach(u => {
                 visibilidad[u.id] = false
@@ -83,7 +85,8 @@ export default function UsuariosPage() {
                 auditoria: false,
                 tamanios: false,
                 tipos: false,
-                unidades: false
+                unidades: false,
+                cocina: false
             }
         })
         setEditandoId(null)
@@ -99,7 +102,6 @@ export default function UsuariosPage() {
         }
 
         try {
-            // Si es admin, todos los permisos son true
             let permisos = { ...formData.permisos }
             if (formData.rol === 'admin') {
                 Object.keys(permisos).forEach(key => { permisos[key] = true })
@@ -181,7 +183,8 @@ export default function UsuariosPage() {
                 auditoria: false,
                 tamanios: false,
                 tipos: false,
-                unidades: false
+                unidades: false,
+                cocina: false
             }
         })
         setMostrarFormulario(true)
@@ -268,13 +271,13 @@ export default function UsuariosPage() {
 
     const getRolBadge = (rol) => {
         const badges = {
-            admin: 'bg-purple-100 text-purple-800',
-            empleado: 'bg-blue-100 text-blue-800',
-            inventario: 'bg-green-100 text-green-800',
-            cocina: 'bg-yellow-100 text-yellow-800',
-            mesero: 'bg-orange-100 text-orange-800',
+            admin: 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+            empleado: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+            inventario: 'bg-green-500/20 text-green-400 border border-green-500/30',
+            cocina: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
+            mesero: 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
         }
-        return badges[rol] || 'bg-gray-100 text-gray-800'
+        return badges[rol] || 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
     }
 
     const getRolEmoji = (rol) => {
@@ -291,15 +294,15 @@ export default function UsuariosPage() {
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap justify-between items-center gap-4">
                     <div>
                         <h2 className="text-2xl font-bold">
-                            <span className="text-golden">Golden</span>
-                            <span className="text-fire"> on </span>
-                            <span className="text-fire-orange">Fire</span>
-                            <span className="text-gray-800"> - Usuarios</span>
+                            <span className="text-gradient-golden">Golden</span>
+                            <span className="text-white"> on </span>
+                            <span className="text-gradient-fire">Fire</span>
+                            <span className="text-white-60"> - Usuarios</span>
                         </h2>
-                        <p className="text-sm text-gray-500">Gestiona usuarios y permisos del sistema</p>
+                        <p className="text-sm text-white-40">Gestiona usuarios y permisos del sistema</p>
                     </div>
                     <button
                         onClick={() => {
@@ -314,8 +317,8 @@ export default function UsuariosPage() {
                 </div>
 
                 {mostrarFormulario && (
-                    <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-golden animate-fade-in">
-                        <h3 className="text-lg font-semibold mb-4">
+                    <div className="glass-golden rounded-xl p-6 border border-golden/30 animate-fade-in-up">
+                        <h3 className="text-lg font-semibold mb-4 text-white">
                             {editandoId ? '✏️ Editar Usuario' : '📝 Nuevo Usuario'}
                         </h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
@@ -380,8 +383,10 @@ export default function UsuariosPage() {
                                                 key={emoji}
                                                 type="button"
                                                 onClick={() => setFormData({...formData, avatar: emoji})}
-                                                className={`text-2xl p-2 rounded-lg hover:bg-gray-100 transition-colors ${
-                                                    formData.avatar === emoji ? 'bg-orange-100 border-2 border-orange-500' : 'border-2 border-transparent'
+                                                className={`text-2xl p-2 rounded-lg transition-colors ${
+                                                    formData.avatar === emoji 
+                                                        ? 'bg-golden/20 border-2 border-golden' 
+                                                        : 'bg-white/5 border-2 border-transparent hover:bg-white/10'
                                                 }`}
                                             >
                                                 {emoji}
@@ -391,13 +396,12 @@ export default function UsuariosPage() {
                                 </div>
                             </div>
 
-                            {/* Sección de permisos (solo si no es admin) */}
                             {formData.rol !== 'admin' && (
-                                <div className="border-t border-gray-200 pt-4">
+                                <div className="border-t border-white/10 pt-4">
                                     <label className="input-label flex items-center gap-2">
                                         <Shield size={18} />
                                         Permisos de Admin Tools
-                                        <span className="text-xs text-gray-400 font-normal">
+                                        <span className="text-xs text-white-40 font-normal">
                                             ({getPermisosActivos(formData.permisos)}/{getTotalPermisos()})
                                         </span>
                                     </label>
@@ -405,29 +409,27 @@ export default function UsuariosPage() {
                                         {PERMISOS_LIST.map((permiso) => (
                                             <label
                                                 key={permiso.key}
-                                                className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
+                                                className="flex items-center gap-2 p-2 rounded-lg border border-white/10 hover:bg-white/5 cursor-pointer transition-colors"
                                             >
                                                 <input
                                                     type="checkbox"
                                                     checked={formData.permisos[permiso.key] || false}
                                                     onChange={() => togglePermiso(permiso.key)}
-                                                    className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                                                    className="w-4 h-4 rounded accent-golden"
                                                 />
-                                                <span className="text-sm">{permiso.label}</span>
+                                                <span className="text-sm text-white-60">{permiso.label}</span>
                                             </label>
                                         ))}
                                     </div>
-                                    {formData.rol === 'empleado' && (
-                                        <p className="text-xs text-gray-400 mt-2">
-                                            💡 Los empleados solo pueden acceder a las herramientas de admin que tengan marcadas.
-                                        </p>
-                                    )}
+                                    <p className="text-xs text-white-40 mt-2">
+                                        💡 Los empleados solo pueden acceder a las herramientas de admin que tengan marcadas.
+                                    </p>
                                 </div>
                             )}
 
                             {formData.rol === 'admin' && (
-                                <div className="border-t border-gray-200 pt-4">
-                                    <p className="text-sm text-green-600 flex items-center gap-2">
+                                <div className="border-t border-white/10 pt-4">
+                                    <p className="text-sm text-green-400 flex items-center gap-2">
                                         <Check size={18} />
                                         Los administradores tienen acceso a todas las herramientas.
                                     </p>
@@ -446,25 +448,25 @@ export default function UsuariosPage() {
                     </div>
                 )}
 
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                <div className="glass rounded-xl overflow-hidden border border-white/10">
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-gray-50">
+                            <thead className="bg-white/5 border-b border-white/10">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avatar</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rol</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Permisos</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Avatar</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Nombre</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Usuario</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Rol</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Permisos</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Estado</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-white-40 uppercase">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-white/5">
                                 {cargando ? (
-                                    <tr><td colSpan="7" className="text-center py-8 text-gray-500">Cargando...</td></tr>
+                                    <tr><td colSpan="7" className="text-center py-8 text-white-40">Cargando...</td></tr>
                                 ) : usuarios.length === 0 ? (
-                                    <tr><td colSpan="7" className="text-center py-8 text-gray-500">No hay usuarios registrados</td></tr>
+                                    <tr><td colSpan="7" className="text-center py-8 text-white-40">No hay usuarios registrados</td></tr>
                                 ) : (
                                     usuarios.map((usuario) => {
                                         const permisosActivos = getPermisosActivos(usuario.permisos)
@@ -472,10 +474,10 @@ export default function UsuariosPage() {
                                         const esAdmin = usuario.rol === 'admin'
                                         
                                         return (
-                                            <tr key={usuario.id} className={!usuario.activo ? 'bg-gray-50 opacity-60' : ''}>
+                                            <tr key={usuario.id} className={!usuario.activo ? 'opacity-50' : ''}>
                                                 <td className="px-4 py-3 text-2xl">{usuario.avatar || '👤'}</td>
-                                                <td className="px-4 py-3 font-medium">{usuario.nombre}</td>
-                                                <td className="px-4 py-3">{usuario.usuario}</td>
+                                                <td className="px-4 py-3 font-medium text-white">{usuario.nombre}</td>
+                                                <td className="px-4 py-3 text-white-60">{usuario.usuario}</td>
                                                 <td className="px-4 py-3">
                                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRolBadge(usuario.rol)}`}>
                                                         {getRolEmoji(usuario.rol)} {usuario.rol.charAt(0).toUpperCase() + usuario.rol.slice(1)}
@@ -483,13 +485,13 @@ export default function UsuariosPage() {
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-sm font-medium">
+                                                        <span className="text-sm font-medium text-white-60">
                                                             {esAdmin ? '✅ Todos' : `${permisosActivos}/${totalPermisos}`}
                                                         </span>
                                                         {!esAdmin && (
                                                             <button
                                                                 onClick={() => togglePermisosVisibles(usuario.id)}
-                                                                className="text-gray-400 hover:text-gray-600"
+                                                                className="text-white-40 hover:text-white-60"
                                                             >
                                                                 {permisosVisibles[usuario.id] ? <EyeOff size={14} /> : <Eye size={14} />}
                                                             </button>
@@ -502,8 +504,8 @@ export default function UsuariosPage() {
                                                                     key={p.key}
                                                                     className={`text-xs px-1.5 py-0.5 rounded ${
                                                                         usuario.permisos[p.key] 
-                                                                            ? 'bg-green-100 text-green-700' 
-                                                                            : 'bg-gray-100 text-gray-400'
+                                                                            ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                                                                            : 'bg-white/5 text-white-30 border border-white/5'
                                                                     }`}
                                                                 >
                                                                     {usuario.permisos[p.key] ? '✅' : '❌'} {p.label.split(' ')[1]}
@@ -514,9 +516,11 @@ export default function UsuariosPage() {
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <span className={`px-2 py-1 rounded-full text-xs ${
-                                                        usuario.activo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                                        usuario.activo 
+                                                            ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                                                            : 'bg-white/10 text-white-40 border border-white/10'
                                                     }`}>
-                                                        {usuario.activo ? 'Activo' : 'Inactivo'}
+                                                        {usuario.activo ? '✅ Activo' : '⏸️ Inactivo'}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 space-x-2">
@@ -524,19 +528,20 @@ export default function UsuariosPage() {
                                                         <>
                                                             <button
                                                                 onClick={() => handleEditar(usuario)}
-                                                                className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                                                                className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1"
                                                             >
                                                                 <Edit2 size={14} /> Editar
                                                             </button>
                                                             <button
                                                                 onClick={() => handleEliminar(usuario.id)}
-                                                                className="text-red-600 hover:text-red-800 text-sm flex items-center gap-1"
+                                                                className="text-red-400 hover:text-red-300 text-sm flex items-center gap-1"
                                                             >
                                                                 <Trash2 size={14} /> Desactivar
                                                             </button>
                                                             <button
                                                                 onClick={() => handleEliminarPermanente(usuario.id)}
-                                                                className="text-red-800 hover:text-red-950 text-sm flex items-center gap-1 font-bold"
+                                                                className="text-red-600 hover:text-red-500 text-sm flex items-center gap-1 font-bold"
+                                                                title="Eliminar permanentemente"
                                                             >
                                                                 🗑️
                                                             </button>
@@ -545,13 +550,14 @@ export default function UsuariosPage() {
                                                         <>
                                                             <button
                                                                 onClick={() => handleReactivar(usuario.id)}
-                                                                className="text-green-600 hover:text-green-800 text-sm flex items-center gap-1"
+                                                                className="text-green-400 hover:text-green-300 text-sm flex items-center gap-1"
                                                             >
                                                                 <RefreshCw size={14} /> Reactivar
                                                             </button>
                                                             <button
                                                                 onClick={() => handleEliminarPermanente(usuario.id)}
-                                                                className="text-red-800 hover:text-red-950 text-sm flex items-center gap-1 font-bold"
+                                                                className="text-red-600 hover:text-red-500 text-sm flex items-center gap-1 font-bold"
+                                                                title="Eliminar permanentemente"
                                                             >
                                                                 🗑️
                                                             </button>
